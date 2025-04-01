@@ -135,8 +135,10 @@ A web application that extracts text and tabular data from images using OpenAI's
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Author
-Akmal Shldn
+## Author & Credits
+Created by [Akmal Shldn](https://github.com/akmaalsh)
+- GitHub: [akmaalsh](https://github.com/akmaalsh)
+- LinkedIn: [Akmal Shalahuddin](https://www.linkedin.com/in/akmalshalahuddin/)
 
 ## Acknowledgments
 - OpenAI for the GPT-4 Vision API
