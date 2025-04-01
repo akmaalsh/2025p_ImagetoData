@@ -68,16 +68,6 @@ A web application that extracts text and tabular data from images using OpenAI's
    npx serve
    ```
 
-## Usage
-
-1. Open your browser and navigate to `http://localhost:3000`
-2. Choose either "Images to Data" or "Images to Text" converter
-3. Upload one or more image files by dragging them or clicking the upload area
-4. Click "Extract Tables" or "Extract Paragraphs" depending on your chosen converter
-5. Wait for the processing to complete
-6. View results in the collapsible sections
-7. Download results in your preferred format
-
 ## Technical Details
 
 ### Backend
