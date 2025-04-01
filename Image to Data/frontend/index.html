@@ -3,51 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Table Extractor</title>
+    <title>Images to Data Converter</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Image(s) to Data Converter</h1>
+            <p class="author">by Akmal Shldn</p>
+        </header>
 
-    <h1>Upload Image(s) & Define Table Structure</h1>
+        <form id="uploadForm">
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-number">1</div>
+                    <h2>Upload Image(s)</h2>
+                </div>
+                <div class="section-content">
+                    <label for="imageInput">Choose image file(s):</label>
+                    <input type="file" id="imageInput" name="imageFiles" accept="image/*" required multiple>
+                    <small>(Note: Context below applies to all selected images in a batch)</small>
+                </div>
+            </div>
 
-    <form id="uploadForm">
-        <div class="form-section">
-            <h2>1. Upload Image(s)</h2>
-            <label for="imageInput">Choose image file(s):</label>
-            <input type="file" id="imageInput" name="imageFiles" accept="image/*" required multiple>
-             <small>(Note: Context below applies to all selected images in a batch)</small>
+            <div class="form-section" id="contextInputs">
+                <div class="section-header">
+                    <div class="section-number">2</div>
+                    <h2>Define Table Context</h2>
+                </div>
+                <div class="section-content">
+                    <p class="section-description">(Optional but Recommended)</p>
+                    <label for="imageDescription">Image Context/Description:</label>
+                    <input type="text" id="imageDescription" name="imageDescription" placeholder="e.g., Concordance KBKI 2015 to KBLI 2020">
+
+                    <label for="columnCount">Expected Number of Columns:</label>
+                    <input type="number" id="columnCount" name="columnCount" min="1" required value="5">
+                    <div id="columnInputsWrapper"></div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-number">3</div>
+                    <h2>Extract</h2>
+                </div>
+                <div class="section-content">
+                    <button type="submit" id="submitButton">Extract Tables</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="progress" class="status" style="display: none;"></div>
+        <div id="error" class="status error" style="display: none;"></div>
+
+        <div id="resultsArea">
+            <div class="section-header">
+                <h2>Extracted Data</h2>
+            </div>
+            <div id="downloadButtons" style="display: none;">
+                <button id="downloadCsvButton" disabled>Download CSV</button>
+                <button id="downloadXlsxButton" disabled>Download Excel (.xlsx)</button>
+            </div>
+            <div id="resultsTableContainer">
+                <p>No data extracted yet.</p>
+            </div>
+            <div id="aggregationInfo"></div>
         </div>
-
-        <div class="form-section" id="contextInputs">
-             <h2>2. Define Table Context (Optional but Recommended)</h2>
-
-             <label for="imageDescription">Image Context/Description:</label>
-             <input type="text" id="imageDescription" name="imageDescription" placeholder="e.g., Concordance KBKI 2015 to KBLI 2020">
-
-             <label for="columnCount">Expected Number of Columns:</label>
-             <input type="number" id="columnCount" name="columnCount" min="1" required value="5"> <div id="columnInputsWrapper">
-                 </div>
-        </div>
-
-         <div class="form-section">
-              <h2>3. Extract</h2>
-              <button type="submit" id="submitButton">Extract Tables</button>
-         </div>
-    </form>
-
-    <div id="progress" class="status" style="display: none;"></div>
-    <div id="error" class.bind="errorDivClass" class="status error" style="display: none;"></div> <div id="resultsArea">
-        <h2>Extracted Data:</h2>
-        <div id="downloadButtons" style="margin-bottom: 15px; text-align: center; display: none;">
-             <button id="downloadCsvButton" disabled>Download CSV</button>
-             <button id="downloadXlsxButton" disabled>Download Excel (.xlsx)</button>
-        </div>
-        <div id="resultsTableContainer">
-            <p>No data extracted yet.</p>
-        </div>
-        <div id="aggregationInfo" style="font-size: 0.8em; text-align: center; margin-top: 10px;"></div>
     </div>
+
+    <footer>
+        <p>© 2024 Image to Data Converter. All rights reserved.</p>
+    </footer>
 
     <script src="script.js"></script>
 </body>
