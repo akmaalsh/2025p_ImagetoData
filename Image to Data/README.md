@@ -6,6 +6,7 @@ This application allows users to upload an image containing a table and uses the
 
 * **Node.js and npm:** Download and install from [https://nodejs.org/](https://nodejs.org/) (LTS version recommended).
 * **OpenAI API Key:** You need an API key from OpenAI. Get one at [https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys).
+* **Python 3.x:** Required for the launcher script (included in most modern operating systems).
 
 ## Setup
 
@@ -32,6 +33,20 @@ This application allows users to upload an image containing a table and uses the
 
 ## Running the Application
 
+### Option 1: Using the Python Launcher (Recommended)
+1. Open a terminal/command prompt
+2. Navigate to the project directory
+3. Run the launcher script:
+   ```bash
+   python launch.py
+   ```
+4. The script will:
+   - Start the backend server
+   - Start the frontend server
+   - Automatically open your default web browser
+5. To stop the application, press Ctrl+C in the terminal window
+
+### Option 2: Manual Launch (Alternative Method)
 1.  **Start the Backend Server:**
     * Open a terminal/command prompt.
     * Navigate to the `backend/` directory.
