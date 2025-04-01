@@ -4,82 +4,108 @@ This application allows users to upload an image containing a table and uses the
 
 ## Prerequisites
 
-* **Node.js and npm:** Download and install from [https://nodejs.org/](https://nodejs.org/) (LTS version recommended).
-* **OpenAI API Key:** You need an API key from OpenAI. Get one at [https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys).
-* **Python 3.x:** Required for the launcher script (included in most modern operating systems).
+* **Node.js and npm:** Download and install from [https://nodejs.org/](https://nodejs.org/) (LTS version recommended)
+* **OpenAI API Key:** You need an API key from OpenAI. Get one at [https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys)
+* **Python 3.x:** Required for the launcher script (included in most modern operating systems)
+* **npx serve:** Will be installed automatically when running the application
 
 ## Setup
 
 1.  **Clone the Repository:**
     ```bash
-    git clone <your-repo-url>
-    cd image-table-extractor
+    git clone https://github.com/akmaalsh/2025p_ImagetoData.git
+    cd 2025p_ImagetoData
     ```
 
 2.  **Install Backend Dependencies:**
     ```bash
-    cd backend
+    cd "Image to Data/backend"
     npm install
     ```
 
 3.  **Configure Backend Environment:**
-    * Create a file named `.env` inside the `backend/` directory.
-    * Open the `.env` file and add your OpenAI API key:
+    * Create a file named `.env` inside the `backend/` directory
+    * Add your OpenAI API key to the `.env` file:
         ```
         OPENAI_API_KEY=sk-YourActualOpenAiApiKeyGoesHere
-        # You can optionally add PORT=3001 if you want to use a different port
         ```
-    * **IMPORTANT:** Ensure the `.env` file is listed in your `.gitignore` file (if using Git) to prevent accidentally committing your secret API key.
+    * The `.env` file is already in `.gitignore` to prevent accidentally committing your API key
 
 ## Running the Application
 
 ### Option 1: Using the Python Launcher (Recommended)
+
+The easiest way to run the application is using the Python launcher script:
+
 1. Open a terminal/command prompt
-2. Navigate to the project directory
+2. Navigate to the project directory:
+   ```bash
+   cd "Image to Data"
+   ```
 3. Run the launcher script:
    ```bash
    python launch.py
    ```
-4. The script will:
-   - Start the backend server
-   - Start the frontend server
-   - Automatically open your default web browser
-5. To stop the application, press Ctrl+C in the terminal window
 
-### Option 2: Manual Launch (Alternative Method)
+The launcher script will:
+- Start the backend server
+- Start the frontend server
+- Display the URLs for both servers
+- Automatically open your default web browser to the frontend
+- Show real-time server output in the terminal
+- Handle graceful shutdown when you press Ctrl+C
+
+### Option 2: Manual Launch
+
+If you prefer to run the servers manually:
+
 1.  **Start the Backend Server:**
-    * Open a terminal/command prompt.
-    * Navigate to the `backend/` directory.
-    * Run the server:
-        ```bash
-        node server.js
-        ```
-    * You should see a message like `Backend server listening at http://localhost:3000`. Keep this terminal running.
+    ```bash
+    cd "Image to Data/backend"
+    node server.js
+    ```
+    Keep this terminal running.
 
-2.  **Serve the Frontend:**
-    * Open a *second* terminal/command prompt.
-    * Navigate to the `frontend/` directory.
-    * The simplest way to serve static files locally is using `npx`:
-        ```bash
-        # Make sure you are in the frontend directory
-        npx serve .
-        ```
-        (If you don't have `npx` or `serve`, you can install it globally `npm install -g serve` or use a VS Code extension like "Live Server".)
-    * The `serve` command will likely output a URL like `http://localhost:3001` (it often picks a different port than the backend).
+2.  **Start the Frontend Server:**
+    * Open a new terminal window
+    * Navigate to the frontend directory:
+    ```bash
+    cd "Image to Data/frontend"
+    npx serve
+    ```
+    * Copy the URL shown in the terminal (usually something like `http://localhost:3000`)
+    * Open the URL in your web browser
 
-3.  **Access the Application:**
-    * Open your web browser and navigate to the frontend URL provided in the second terminal (e.g., `http://localhost:3001`).
+## Using the Application
 
-## Usage
+1. Once the application is running, you'll see a simple web interface
+2. Click "Choose File" and select an image containing a data table
+3. Click the "Extract Table" button
+4. Wait for the processing to complete (you'll see a loading indicator)
+5. The extracted table data will be displayed below
 
-1.  Click "Choose File" and select an image containing a data table.
-2.  Click the "Extract Table" button.
-3.  Wait for the processing to complete (you'll see a loading indicator).
-4.  The extracted table data will be displayed below, or an error message will appear if something goes wrong.
+## Important Notes
 
-## Notes
+* **API Costs:** Each table extraction uses the OpenAI API, which has associated costs. Be mindful of your usage.
+* **Image Quality:** The accuracy of table extraction depends on:
+  - Image quality and resolution
+  - Table complexity and layout
+  - Text clarity and formatting
+* **Error Handling:**
+  - Check the browser's developer console (F12) for frontend errors
+  - Check the terminal output for backend errors
+  - Common issues include invalid API keys or network problems
+* **Security:** Your OpenAI API key is:
+  - Only stored locally in the `.env` file
+  - Only used by the backend server
+  - Never exposed to the frontend
+  - Protected from accidental commits by `.gitignore`
 
-* **API Costs:** Calls to the OpenAI API cost money based on usage. Be mindful of this during development and testing.
-* **Error Handling:** Basic error handling is implemented. Check the browser's developer console (F12) and the backend terminal for more detailed error logs if issues occur.
-* **Extraction Accuracy:** The accuracy of the table extraction depends heavily on the image quality, table complexity, and the capabilities of the specific OpenAI model used.
-* **Security:** The OpenAI API key is handled on the backend and read from an environment variable (`.env` file), which is the standard secure practice. **Never** expose your API key directly in the frontend JavaScript code.
+## Troubleshooting
+
+* If the browser doesn't open automatically, copy the frontend URL from the terminal and paste it into your browser
+* If you see "Invalid API Key" errors, check your `.env` file configuration
+* If the servers won't start, make sure no other applications are using ports 3000 or 3001
+* To stop the application:
+  - If using the launcher: Press Ctrl+C in the terminal
+  - If running manually: Press Ctrl+C in both terminal windows
