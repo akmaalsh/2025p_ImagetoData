@@ -20,7 +20,7 @@ A web application that extracts text and tabular data from images using OpenAI's
 - Preserves table structure
 - Download options:
   - Excel (single or separate sheets)
-  - CSV (single or separate sheets)
+  - CSV (single or separate files)
 
 ### Images to Text Converter
 - Extracts paragraphs and text content
