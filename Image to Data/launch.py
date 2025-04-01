@@ -34,14 +34,27 @@ def launch_servers():
         stderr=subprocess.PIPE
     )
 
-    # Wait a moment for the frontend to start
+    # Wait a moment for the frontend to start and capture its output
     time.sleep(2)
+    
+    # Read the frontend server output to get the URL
+    frontend_output = frontend_process.stdout.readline().decode('utf-8')
+    # Usually serve outputs something like "Serving!..." on first line
+    # and the URL on second line
+    frontend_url = frontend_process.stdout.readline().decode('utf-8').strip()
+    
+    if "http" in frontend_url:
+        url = frontend_url.split(" ")[-1]  # Get the last word which should be the URL
+    else:
+        url = "http://localhost:3001"  # Fallback URL
 
     # Open the browser
     print("\n✨ Opening browser...")
-    webbrowser.open('http://localhost:3000')
+    webbrowser.open(url)
 
     print("\n✅ Application is running!")
+    print(f"Frontend is available at: {url}")
+    print("Backend is running at: http://localhost:3000")
     print("\nTo stop the servers, press Ctrl+C in this terminal window.")
     print("Note: You may need to close your browser window as well.")
 
