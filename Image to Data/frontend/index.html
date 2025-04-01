@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Images to Data Converter</title>
+    <title>Image(s) to Data Converter</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -14,76 +12,287 @@
             <h1>Image(s) to Data Converter</h1>
             <p class="author">by Akmal Shldn</p>
             <div class="description">
-                <p>Transform your image tables into structured data using OpenAI's GPT-4o model.</p>
+                <p>Transform your image tables into structured data using OpenAI's GPT-4V (GPT-4 Vision) model.</p>
+                <p>Perfect for converting tables from images into Excel or CSV format with high accuracy.</p>
             </div>
         </header>
 
-        <form id="uploadForm">
-            <div class="form-section">
-                <div class="section-header">
-                    <div class="section-number">1</div>
-                    <h2>Upload Image(s)</h2>
+        <main>
+            <form id="uploadForm" class="upload-form">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="step-number">1</div>
+                        <h2>Upload Images</h2>
+                    </div>
+                    <div class="section-content">
+                        <input type="file" id="imageFile" name="imageFile" accept="image/*" multiple>
+                        <div id="fileList" class="file-list"></div>
+                    </div>
                 </div>
-                <div class="section-content">
-                    <label for="imageInput">Choose image file(s):</label>
-                    <input type="file" id="imageInput" name="imageFiles" accept="image/*" required multiple>
-                    <small>(Note: Context below applies to all selected images in a batch)</small>
-                </div>
-            </div>
 
-            <div class="form-section" id="contextInputs">
-                <div class="section-header">
-                    <div class="section-number">2</div>
-                    <h2>Define Table Context</h2>
+                <div class="section">
+                    <div class="section-header">
+                        <div class="step-number">2</div>
+                        <h2>Define Table Context</h2>
+                    </div>
+                    <div class="section-content">
+                        <label for="imageDescription">Image Context/Description:</label>
+                        <input type="text" id="imageDescription" name="imageDescription" placeholder="e.g., Concordance KBKI 2015 to KBLI 2020">
+                        
+                        <div class="columns-section">
+                            <label>Number of Columns:</label>
+                            <input type="number" id="columnCount" name="columnCount" min="1" required>
+                            
+                            <div id="columnDetails" class="column-details">
+                                <!-- Column details will be added here dynamically -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="section-content">
-                    <label for="imageDescription">Image Context/Description:</label>
-                    <input type="text" id="imageDescription" name="imageDescription" placeholder="e.g., Concordance KBKI 2015 to KBLI 2020">
 
-                    <label for="columnCount">Expected Number of Columns:</label>
-                    <input type="number" id="columnCount" name="columnCount" min="1" required value="5">
-                    <div id="columnInputsWrapper"></div>
+                <div class="section">
+                    <div class="section-header">
+                        <div class="step-number">3</div>
+                        <h2>Extract Tables</h2>
+                    </div>
+                    <div class="section-content">
+                        <button type="submit" id="extractButton">Extract Tables</button>
+                        <div id="progressContainer" class="progress-container" style="display: none;">
+                            <div class="progress-bar">
+                                <div id="progressBar" class="progress"></div>
+                            </div>
+                            <p id="progressText">Processing: 0/0 files (0%)</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-section">
-                <div class="section-header">
-                    <div class="section-number">3</div>
-                    <h2>Extract</h2>
+                <div id="resultsSection" class="section" style="display: none;">
+                    <div class="section-header">
+                        <div class="step-number">4</div>
+                        <h2>Results</h2>
+                    </div>
+                    <div class="section-content">
+                        <div id="resultsList" class="results-list"></div>
+                        <div class="download-options">
+                            <button id="downloadExcel" class="download-button">Download All as Excel</button>
+                            <button id="downloadCSV" class="download-button">Download All as CSV</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="section-content">
-                    <button type="submit" id="submitButton">Extract Tables</button>
-                </div>
-            </div>
-        </form>
+            </form>
+        </main>
 
-        <div id="progress" class="status" style="display: none;"></div>
-        <div id="error" class="status error" style="display: none;"></div>
-
-        <div id="resultsArea">
-            <div class="section-header">
-                <h2>Extracted Data</h2>
+        <footer>
+            <p>© 2025 Image to Data Converter. All rights reserved.</p>
+            <div class="social-links">
+                <a href="https://github.com/akmaalsh" target="_blank" rel="noopener noreferrer">Akmal's GitHub</a>
+                <span class="separator">•</span>
+                <a href="https://www.linkedin.com/in/akmalshalahuddin/" target="_blank" rel="noopener noreferrer">Akmal's LinkedIn</a>
             </div>
-            <div id="downloadButtons" style="display: none;">
-                <button id="downloadCsvButton" disabled>Download CSV</button>
-                <button id="downloadXlsxButton" disabled>Download Excel (.xlsx)</button>
-            </div>
-            <div id="resultsTableContainer">
-                <p>No data extracted yet.</p>
-            </div>
-            <div id="aggregationInfo"></div>
-        </div>
+        </footer>
     </div>
 
-    <footer>
-        <p>© 2025 Image to Data Converter. All rights reserved.</p>
-        <div class="social-links">
-            <a href="https://github.com/akmaalsh" target="_blank" rel="noopener noreferrer">Akmal's GitHub</a>
-            <span class="separator">•</span>
-            <a href="https://www.linkedin.com/in/akmalshalahuddin/" target="_blank" rel="noopener noreferrer">Akmal's LinkedIn</a>
-        </div>
-    </footer>
+    <script>
+        let ws = null;
+        let currentJobId = null;
+        const API_BASE_URL = 'http://localhost:3000';
 
-    <script src="script.js"></script>
+        // File list management
+        const fileInput = document.getElementById('imageFile');
+        const fileList = document.getElementById('fileList');
+        
+        fileInput.addEventListener('change', () => {
+            fileList.innerHTML = '';
+            Array.from(fileInput.files).forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-status">Pending</span>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        });
+
+        // Column management
+        const columnCount = document.getElementById('columnCount');
+        const columnDetails = document.getElementById('columnDetails');
+
+        columnCount.addEventListener('change', () => {
+            const count = parseInt(columnCount.value);
+            if (isNaN(count) || count < 1) return;
+
+            columnDetails.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const columnDiv = document.createElement('div');
+                columnDiv.className = 'column-input';
+                columnDiv.innerHTML = `
+                    <label>Column ${i + 1}:</label>
+                    <input type="text" name="columnNames" placeholder="Column name" required>
+                    <input type="text" name="columnExamples" placeholder="Example content">
+                `;
+                columnDetails.appendChild(columnDiv);
+            }
+        });
+
+        // WebSocket connection management
+        function connectWebSocket(port) {
+            ws = new WebSocket(`ws://localhost:${port}`);
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                updateProgress(data);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            };
+        }
+
+        // Progress tracking
+        function updateProgress(data) {
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const resultsList = document.getElementById('resultsList');
+
+            progressContainer.style.display = 'block';
+            progressBar.style.width = `${data.progress}%`;
+            progressText.textContent = `Processing: ${data.processedCount}/${data.totalFiles} files (${data.progress}%)`;
+
+            // Update file statuses
+            if (data.latestResults) {
+                data.latestResults.forEach(result => {
+                    const fileItems = document.querySelectorAll('.file-item');
+                    const fileItem = Array.from(fileItems).find(item => 
+                        item.querySelector('.file-name').textContent === result.filename
+                    );
+                    
+                    if (fileItem) {
+                        const statusSpan = fileItem.querySelector('.file-status');
+                        statusSpan.textContent = result.success ? 'Completed' : 'Failed';
+                        statusSpan.className = `file-status ${result.success ? 'success' : 'error'}`;
+                    }
+                });
+            }
+
+            // Handle completion
+            if (data.status === 'complete') {
+                document.getElementById('resultsSection').style.display = 'block';
+                displayResults(data.finalResults);
+            }
+        }
+
+        // Results display
+        function displayResults(results) {
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+
+            results.results.forEach((result, index) => {
+                const resultItem = document.createElement('div');
+                resultItem.className = `result-item ${result.success ? 'success' : 'error'}`;
+                
+                if (result.success) {
+                    resultItem.innerHTML = `
+                        <h3>${result.filename}</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>${result.data.headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                                </thead>
+                                <tbody>
+                                    ${result.data.rows.map(row => 
+                                        `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
+                                    ).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    resultItem.innerHTML = `
+                        <h3>${result.filename}</h3>
+                        <p class="error-message">Error: ${result.error}</p>
+                    `;
+                }
+                
+                resultsList.appendChild(resultItem);
+            });
+        }
+
+        // Form submission
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                alert('Please select at least one file');
+                return;
+            }
+
+            // Add files
+            Array.from(files).forEach(file => {
+                formData.append('imageFiles', file);
+            });
+
+            // Add other form data
+            formData.append('imageDescription', document.getElementById('imageDescription').value);
+            formData.append('columnCount', columnCount.value);
+            
+            // Add column details
+            const columnNames = document.getElementsByName('columnNames');
+            const columnExamples = document.getElementsByName('columnExamples');
+            
+            Array.from(columnNames).forEach(input => {
+                formData.append('columnNames', input.value);
+            });
+            
+            Array.from(columnExamples).forEach(input => {
+                formData.append('columnExamples', input.value);
+            });
+
+            try {
+                // Show progress container
+                document.getElementById('progressContainer').style.display = 'block';
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('progressText').textContent = 'Starting processing...';
+
+                // Submit the form
+                const response = await fetch(`${API_BASE_URL}/api/extract-tables-batch`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentJobId = data.jobId;
+                    connectWebSocket(data.wsPort);
+                } else {
+                    throw new Error(data.error);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred: ' + error.message);
+            }
+        });
+
+        // Download handlers
+        document.getElementById('downloadExcel').addEventListener('click', () => {
+            // Implement Excel download
+            alert('Excel download functionality will be implemented');
+        });
+
+        document.getElementById('downloadCSV').addEventListener('click', () => {
+            // Implement CSV download
+            alert('CSV download functionality will be implemented');
+        });
+    </script>
 </body>
 </html>

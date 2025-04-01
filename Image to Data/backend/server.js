@@ -2,10 +2,21 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const { OpenAI } = require('openai'); // Using OpenAI
+const { OpenAI } = require('openai');
+const WebSocket = require('ws');
+const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const wsPort = 3001;
+
+// WebSocket server for progress updates
+const wss = new WebSocket.Server({ port: wsPort });
+console.log(`WebSocket server is running on port ${wsPort}`);
+
+// Track active jobs
+const activeJobs = new Map();
 
 // --- Configuration ---
 const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -17,9 +28,6 @@ const openai = new OpenAI({ apiKey: openaiApiKey });
 
 // --- Middleware ---
 app.use(cors());
-// No need for express.json() or express.urlencoded() when using multer for multipart/form-data
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
 
 // Configure Multer
 const storage = multer.memoryStorage();
@@ -28,8 +36,236 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-// --- API Endpoint ---
-// Use upload.any() to handle all incoming fields
+// Utility function to process a single image
+async function processImage(imageFile, imageDescription, columnCount, columnNames, columnExamples) {
+    try {
+        const base64Image = imageFile.buffer.toString('base64');
+        const mimeType = imageFile.mimetype || 'image/jpeg';
+
+        // Build the prompt (existing prompt building code)
+        let columnDescriptions = `There are exactly ${columnCount} columns in this table with the following names and content examples:\n`;
+        for (let i = 0; i < columnCount; i++) {
+            const name = columnNames[i] || `Column ${i + 1}`;
+            const example = columnExamples[i] ? ` (example content is like "${columnExamples[i]}")` : "";
+            columnDescriptions += `Column ${i + 1} Name: "${name}"${example}\n`;
+        }
+
+        const dynamicPrompt = `
+You are an expert table data extraction assistant. Analyze "${imageDescription}" provided as an image.
+Extract the main data table according to these precise specifications:
+
+${columnDescriptions}
+
+**Output Requirements:**
+1. **Strict JSON Structure:** Output ONLY a JSON object with exactly two keys:
+   * \`"headers"\`: An array containing exactly ${columnCount} strings, using these specific names in this exact order: [${columnNames.map(name => `"${name}"`).join(", ")}].
+   * \`"rows"\`: An array of arrays, where each inner array represents a single extracted row.
+2. **Column Count Consistency:** Ensure every inner array in \`"rows"\` has exactly ${columnCount} elements.
+3. **Empty Cells:** Represent empty cells as empty strings ("").
+4. **Multi-line Text:** Combine multi-line text within cells using space as separator.
+5. **Illegible Text:** Use "UNCLEAR" for genuinely illegible text.
+6. **No Table Found:** Return \`{"error": "No table detected"}\` if no table is found.
+7. **Strict Output Format:** Output ONLY the valid JSON object.`;
+
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: dynamicPrompt },
+                        { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+                    ]
+                }
+            ],
+            max_tokens: 3000,
+        });
+
+        const messageContent = response.choices[0]?.message?.content;
+        if (!messageContent) {
+            throw new Error("Empty response from API");
+        }
+
+        // Parse and validate response
+        let jsonString = messageContent;
+        const jsonBlockMatch = messageContent.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonBlockMatch && jsonBlockMatch[1]) jsonString = jsonBlockMatch[1];
+
+        const parsedData = JSON.parse(jsonString);
+
+        // Validation checks
+        if (parsedData.error) {
+            return { success: false, error: parsedData.error, filename: imageFile.originalname };
+        }
+
+        if (!parsedData || !Array.isArray(parsedData.headers) || !Array.isArray(parsedData.rows)) {
+            throw new Error("Invalid data structure received from API");
+        }
+
+        if (parsedData.headers.length !== columnCount) {
+            throw new Error(`Header count mismatch: Expected ${columnCount}, got ${parsedData.headers.length}`);
+        }
+
+        const inconsistentRow = parsedData.rows.find(row => !Array.isArray(row) || row.length !== columnCount);
+        if (inconsistentRow) {
+            throw new Error(`Inconsistent row length detected`);
+        }
+
+        return { 
+            success: true, 
+            data: parsedData, 
+            filename: imageFile.originalname 
+        };
+
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message,
+            filename: imageFile.originalname
+        };
+    }
+}
+
+// Batch processing endpoint
+app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req, res) => {
+    try {
+        const files = req.files;
+        if (!files || files.length === 0) {
+            return res.status(400).json({ success: false, error: "No files uploaded" });
+        }
+
+        // Generate unique job ID
+        const jobId = Date.now().toString();
+        
+        // Parse other parameters
+        const imageDescription = req.body.imageDescription || "this image";
+        const columnCount = parseInt(req.body.columnCount, 10);
+        const columnNames = Array.isArray(req.body.columnNames) ? req.body.columnNames : [req.body.columnNames];
+        const columnExamples = Array.isArray(req.body.columnExamples) ? req.body.columnExamples : [req.body.columnExamples];
+
+        // Validate parameters
+        if (isNaN(columnCount) || columnCount <= 0 || columnNames.length !== columnCount || columnExamples.length !== columnCount) {
+            return res.status(400).json({
+                success: false,
+                error: `Invalid column specification: Expected ${columnCount} columns but received ${columnNames.length} names and ${columnExamples.length} examples.`
+            });
+        }
+
+        // Initialize job tracking
+        const totalFiles = files.length;
+        let processedCount = 0;
+        const results = [];
+        
+        // Store job info
+        activeJobs.set(jobId, {
+            total: totalFiles,
+            processed: 0,
+            results: []
+        });
+
+        // Process files concurrently with rate limiting
+        const CONCURRENT_LIMIT = 5;
+        const chunks = [];
+        for (let i = 0; i < files.length; i += CONCURRENT_LIMIT) {
+            chunks.push(files.slice(i, i + CONCURRENT_LIMIT));
+        }
+
+        // Send initial response
+        res.json({ 
+            success: true, 
+            jobId,
+            message: `Processing ${totalFiles} files`,
+            wsPort: wsPort
+        });
+
+        // Process chunks sequentially, but files within chunks concurrently
+        for (const chunk of chunks) {
+            const chunkPromises = chunk.map(file => 
+                processImage(file, imageDescription, columnCount, columnNames, columnExamples)
+            );
+
+            const chunkResults = await Promise.all(chunkPromises);
+            results.push(...chunkResults);
+            processedCount += chunk.length;
+
+            // Update progress via WebSocket
+            const progress = Math.round((processedCount / totalFiles) * 100);
+            wss.clients.forEach(client => {
+                client.send(JSON.stringify({
+                    jobId,
+                    progress,
+                    processedCount,
+                    totalFiles,
+                    latestResults: chunkResults
+                }));
+            });
+
+            // Update job tracking
+            const jobInfo = activeJobs.get(jobId);
+            if (jobInfo) {
+                jobInfo.processed = processedCount;
+                jobInfo.results = results;
+            }
+
+            // Add a small delay between chunks to avoid rate limiting
+            if (chunks.length > 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        // Mark job as complete
+        const finalResults = {
+            jobId,
+            totalProcessed: processedCount,
+            results: results
+        };
+        
+        // Clean up job tracking
+        activeJobs.delete(jobId);
+
+        // Send final update via WebSocket
+        wss.clients.forEach(client => {
+            client.send(JSON.stringify({
+                jobId,
+                progress: 100,
+                processedCount,
+                totalFiles,
+                status: 'complete',
+                finalResults
+            }));
+        });
+
+    } catch (error) {
+        console.error('Batch processing error:', error);
+        // Send error via WebSocket
+        wss.clients.forEach(client => {
+            client.send(JSON.stringify({
+                jobId,
+                status: 'error',
+                error: error.message
+            }));
+        });
+    }
+});
+
+// Status endpoint
+app.get('/api/job-status/:jobId', (req, res) => {
+    const jobId = req.params.jobId;
+    const jobInfo = activeJobs.get(jobId);
+    
+    if (!jobInfo) {
+        return res.json({ status: 'not_found' });
+    }
+
+    res.json({
+        status: 'in_progress',
+        progress: Math.round((jobInfo.processed / jobInfo.total) * 100),
+        processed: jobInfo.processed,
+        total: jobInfo.total
+    });
+});
+
+// Keep the existing single file endpoint
 app.post('/api/extract-table', upload.any(), async (req, res) => {
     // Log received body and files for debugging
     console.log("Received req.body:", JSON.stringify(req.body, null, 2));
