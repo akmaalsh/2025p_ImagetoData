@@ -1,137 +1,145 @@
-# Image to Data Converter
+# Image to Data Code Documentation
 
-A specialized web application that extracts tabular data from images using OpenAI's GPT-4o model. This tool is particularly useful for converting tables in images into structured, analyzable data formats.
+## Code Structure
 
-## Features
+### Backend (`/backend/server.js`)
 
-### Upload and Processing
-- **Modern Upload Interface**
-  - Drag and drop functionality
-  - Multiple file support
-  - File type validation (JPG, PNG, GIF)
-  - Visual feedback during upload
-  - File list with status indicators
+The backend server handles image processing and data extraction using OpenAI's GPT-4o model.
 
-### Table Extraction
-- **Flexible Column Configuration**
-  - Dynamic column count adjustment
-  - Custom column naming
-  - Example content hints for better accuracy
-  - Context/description field for improved extraction
+#### Key Components:
 
-### Real-time Processing
-- **Progress Tracking**
-  - Individual file status updates
-  - Overall progress indication
-  - Error handling and reporting
-  - Sequential processing for reliability
+1. **Server Setup**
+```javascript
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+const wsPort = 3001;
+```
+- Express server on port 3000
+- WebSocket server on port 3001 for real-time updates
 
-### Results Management
-- **Interactive Results View**
-  - Collapsible result sections
-  - Preview of extracted data
-  - Success/failure indicators
-  - Error messages for failed extractions
+2. **Image Processing Function**
+```javascript
+async function processImage(imageFile, imageDescription, columnCount, columnNames, columnExamples)
+```
+- Converts image to base64
+- Constructs dynamic prompt for GPT-4o
+- Validates and processes API response
+- Returns structured data or error
 
-### Download Options
-- **Multiple Export Formats**
-  - Excel format (XLSX)
-    - Single sheet option
-    - Separate sheets per image
-  - CSV format
-    - Combined file option
-    - Individual files per image
+3. **Batch Processing Endpoint**
+```javascript
+app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req, res)
+```
+- Handles multiple file uploads (up to 50 files)
+- Sequential processing of images
+- Real-time progress updates via WebSocket
+- Job tracking with unique IDs
 
-## Setup Instructions
+### Frontend Structure
 
-1. **Environment Setup**
-   ```bash
-   # Install Node.js dependencies
-   cd backend
-   npm install
-   
-   # Create .env file
-   echo "OPENAI_API_KEY=your_api_key_here" > .env
+1. **HTML (`/frontend/index.html`)**
+   - Upload section with drag-and-drop
+   - Column configuration inputs
+   - Progress tracking display
+   - Results section with collapsible items
+   - Download options interface
+
+2. **JavaScript Functions**
+   - WebSocket connection management
+   - File upload handling
+   - Progress tracking
+   - Dynamic column management
+   - Download functionality
+
+3. **CSS Styling (`/frontend/style.css`)**
+   - Modern UI components
+   - Responsive design
+   - Progress animations
+   - Results formatting
+
+## Data Flow
+
+1. **Upload Process**
+   ```javascript
+   // Frontend sends files and configuration
+   formData.append('imageFiles', file);
+   formData.append('columnCount', count);
+   formData.append('columnNames', names);
    ```
 
-2. **Starting the Application**
-   ```bash
-   # Using the launch script (recommended)
-   python3 launch.py
-   
-   # Or manually:
-   # Terminal 1 (Backend)
-   cd backend
-   node server.js
-   
-   # Terminal 2 (Frontend)
-   cd frontend
-   npx serve
+2. **Processing Pipeline**
+   ```javascript
+   // Backend processes each file
+   for (const file of files) {
+       const result = await processImage(file, ...);
+       // Send progress via WebSocket
+   }
    ```
 
-## Usage Guide
+3. **Results Handling**
+   ```javascript
+   // Backend response structure
+   {
+       success: true,
+       data: {
+           headers: [...],
+           rows: [[...], [...]]
+       }
+   }
+   ```
 
-1. **Preparing Your Images**
-   - Ensure tables are clearly visible
-   - Good contrast between text and background
-   - Minimal image noise or artifacts
-   - Supported formats: JPG, PNG, GIF
+## API Integration
 
-2. **Configuring the Extraction**
-   - Set the number of columns
-   - Name each column appropriately
-   - Provide example content if available
-   - Add context description for better accuracy
+1. **OpenAI Configuration**
+```javascript
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+```
 
-3. **Processing Images**
-   - Upload one or more images
-   - Monitor the progress bar
-   - Wait for processing completion
-   - Review results in the collapsible sections
-
-4. **Downloading Results**
-   - Choose your preferred format (Excel/CSV)
-   - Select combined or separate files
-   - Download and verify the data
-
-## Technical Implementation
-
-### Backend Architecture
-- Express.js server
-- OpenAI GPT-4o integration
-- WebSocket for real-time updates
-- Sequential image processing
-- Robust error handling
-
-### Frontend Design
-- Modern UI with CSS variables
-- Responsive layout
-- Real-time WebSocket communication
-- Client-side file handling
-- Dynamic UI updates
+2. **API Call Structure**
+```javascript
+const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+        {
+            role: "user",
+            content: [
+                { type: "text", text: dynamicPrompt },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]
+        }
+    ]
+});
+```
 
 ## Error Handling
-- File type validation
-- Size limit checks
-- API error recovery
-- Network issue handling
-- User feedback system
 
-## Best Practices
-- Use PNG format for clearest text
-- Keep image sizes reasonable
-- Provide accurate column information
-- Add descriptive context
-- Process files in manageable batches
+1. **Input Validation**
+```javascript
+if (isNaN(columnCount) || columnCount <= 0) {
+    return res.status(400).json({ success: false, error: "Invalid column count" });
+}
+```
 
-## Troubleshooting
-- Check API key configuration
-- Verify server connectivity
-- Monitor WebSocket connection
-- Review browser console for errors
-- Check file format compatibility
+2. **Processing Errors**
+```javascript
+try {
+    const parsedData = JSON.parse(jsonString);
+    // Validation checks...
+} catch (error) {
+    return { success: false, error: error.message };
+}
+```
 
-## Author
-Created by Akmal Shalahuddin
-- GitHub: [akmaalsh](https://github.com/akmaalsh)
-- LinkedIn: [Akmal Shalahuddin](https://www.linkedin.com/in/akmalshalahuddin/) 
+## Launch Script (`launch.py`)
+- Starts both frontend and backend servers
+- Opens browser automatically
+- Displays server output in real-time
+- Handles server shutdown
+
+## Dependencies
+- express: Web server framework
+- multer: File upload handling
+- ws: WebSocket implementation
+- openai: OpenAI API client
+- cors: Cross-origin resource sharing 

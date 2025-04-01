@@ -1,152 +1,151 @@
-# Image to Text Converter
+# Image to Text Code Documentation
 
-A powerful web application that extracts text content from images using OpenAI's GPT-4o model. This tool excels at converting text-based images into editable, searchable text while maintaining the original structure and organization.
+## Code Structure
 
-## Features
+### Backend (`/backend/server.js`)
 
-### Modern Upload Interface
-- **User-Friendly Design**
-  - Drag and drop functionality
-  - Multiple file support
-  - Progress indicators
-  - File type validation
-  - Visual upload feedback
+The backend server handles image processing and text extraction using OpenAI's GPT-4o model.
 
-### Text Extraction
-- **Intelligent Processing**
-  - Maintains paragraph structure
-  - Preserves text formatting
-  - Handles multiple languages
-  - Context-aware extraction
-  - High accuracy results
+#### Key Components:
 
-### Real-time Feedback
-- **Processing Updates**
-  - Individual file progress
-  - Overall batch status
-  - Success/failure indicators
-  - Error reporting
-  - Processing time estimates
+1. **Server Setup**
+```javascript
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3001;
+```
+- Express server configuration
+- Environment variable support
+- CORS enabled for frontend access
 
-### Results Display
-- **Organized Output**
-  - Collapsible result sections
-  - Clean text formatting
-  - Easy navigation
-  - Copy functionality
-  - Preview capabilities
+2. **Paragraph Extraction Prompt**
+```javascript
+const PARAGRAPH_EXTRACTION_PROMPT = `...`;
+```
+- Detailed instructions for GPT-4o
+- Paragraph identification rules
+- Output format specifications
+- Error handling guidelines
 
-### Download Options
-- **Multiple Formats**
-  - Text files (TXT)
-    - Individual files
-    - Combined output
-  - Excel format (XLSX)
-    - Separate sheets
-    - Single sheet
-  - CSV format
-    - Individual files
-    - Combined data
+3. **Main Processing Endpoint**
+```javascript
+app.post('/api/extract-paragraphs', upload.single('imageFile'), async (req, res)
+```
+- Single file processing
+- Image to base64 conversion
+- OpenAI API integration
+- Response validation
 
-## Setup Instructions
+### Frontend Structure
 
-1. **Environment Configuration**
-   ```bash
-   # Install dependencies
-   cd backend
-   npm install
-   
-   # Set up environment
-   echo "OPENAI_API_KEY=your_api_key_here" > .env
-   ```
+1. **HTML (`/frontend/index.html`)**
+   - File upload interface
+   - Progress indicator
+   - Results display
+   - Download options
+   - Social links and credits
 
-2. **Launch Application**
-   ```bash
-   # Using launch script (recommended)
-   python3 launch.py
-   
-   # Or manually:
-   # Terminal 1 (Backend)
-   cd backend
-   node server.js
-   
-   # Terminal 2 (Frontend)
-   cd frontend
-   npx serve
-   ```
+2. **JavaScript Functions**
+   - File handling
+   - API communication
+   - Results formatting
+   - Download generation
+   - Error handling
 
-## Usage Guide
+3. **CSS Styling (`/frontend/style.css`)**
+   - Modern interface design
+   - Responsive layout
+   - Progress animations
+   - Results formatting
 
-1. **Image Preparation**
-   - Ensure clear, readable text
-   - Good image resolution
-   - Proper lighting/contrast
-   - Supported formats: JPG, PNG, GIF
+## Data Flow
 
-2. **File Upload**
-   - Drag and drop files
-   - Or use file selector
-   - Monitor upload progress
-   - Check file status
+1. **Upload Process**
+```javascript
+// Frontend file handling
+const formData = new FormData();
+formData.append('imageFile', file);
+```
 
-3. **Processing**
-   - Click "Extract Text"
-   - Wait for processing
-   - Monitor progress bar
-   - Review results
+2. **Processing Pipeline**
+```javascript
+// Backend processing
+const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+        {
+            role: "user",
+            content: [
+                { type: "text", text: PARAGRAPH_EXTRACTION_PROMPT },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]
+        }
+    ]
+});
+```
 
-4. **Managing Results**
-   - Expand/collapse sections
-   - Review extracted text
-   - Copy text as needed
-   - Download in preferred format
+3. **Response Structure**
+```javascript
+// Expected response format
+{
+    success: true,
+    data: {
+        paragraphs: [
+            "First paragraph text...",
+            "Second paragraph text...",
+            // ...
+        ]
+    }
+}
+```
 
-## Technical Details
+## API Integration
 
-### Backend Implementation
-- Express.js server
-- OpenAI GPT-4o integration
-- Sequential processing
-- Error handling
-- File management
+1. **OpenAI Setup**
+```javascript
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+```
 
-### Frontend Features
-- Responsive design
-- Real-time updates
-- Dynamic content loading
-- Browser compatibility
-- Mobile optimization
-
-## Best Practices
-- Use high-quality images
-- Keep files under size limit
-- Process in manageable batches
-- Verify extracted text
-- Save results promptly
+2. **Response Processing**
+```javascript
+const messageContent = response.choices[0]?.message?.content;
+const parsedData = JSON.parse(jsonString);
+```
 
 ## Error Handling
-- Input validation
-- Processing recovery
-- Network error handling
-- User notifications
-- Graceful degradation
 
-## Troubleshooting
-1. **Common Issues**
-   - API key verification
-   - Server connectivity
-   - File format support
-   - Size limitations
-   - Browser compatibility
+1. **Input Validation**
+```javascript
+if (!req.file) {
+    return res.status(400).json({ 
+        success: false, 
+        error: "No image file provided." 
+    });
+}
+```
 
-2. **Solutions**
-   - Check environment setup
-   - Verify network connection
-   - Monitor browser console
-   - Review file requirements
-   - Clear browser cache
+2. **API Error Handling**
+```javascript
+try {
+    // Process response
+} catch (error) {
+    console.error("Error calling OpenAI API:", error);
+    res.status(500).json({
+        success: false,
+        error: "An error occurred while processing the image"
+    });
+}
+```
 
-## Author
-Created by Akmal Shalahuddin
-- GitHub: [akmaalsh](https://github.com/akmaalsh)
-- LinkedIn: [Akmal Shalahuddin](https://www.linkedin.com/in/akmalshalahuddin/) 
+## Launch Script (`launch.py`)
+- Manages server startup
+- Handles environment setup
+- Opens browser automatically
+- Provides real-time server output
+
+## Dependencies
+- express: Web framework
+- multer: File upload handling
+- openai: OpenAI API client
+- cors: Cross-origin support
+- dotenv: Environment configuration 
