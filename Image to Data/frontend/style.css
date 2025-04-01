@@ -564,3 +564,36 @@ footer {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+.toggle-all-button {
+    margin-left: auto;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    background: var(--background-secondary);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toggle-all-button:hover {
+    background: var(--border-color);
+    transform: translateY(-1px);
+}
+
+.toggle-all-button:active {
+    transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-wrap: wrap;
+    }
+
+    .toggle-all-button {
+        margin-left: 0;
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+}

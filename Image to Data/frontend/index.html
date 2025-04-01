@@ -72,6 +72,7 @@
                     <div class="section-header">
                         <div class="step-number">4</div>
                         <h2>Results</h2>
+                        <button id="toggleAllResults" class="toggle-all-button">Collapse All</button>
                     </div>
                     <div class="section-content">
                         <div id="resultsList" class="results-list"></div>
@@ -242,6 +243,26 @@
             const resultItem = header.parentElement;
             resultItem.classList.toggle('collapsed');
         }
+
+        // Toggle all results
+        function toggleAllResults() {
+            const button = document.getElementById('toggleAllResults');
+            const resultItems = document.querySelectorAll('.result-item');
+            const isCollapsing = button.textContent === 'Collapse All';
+
+            resultItems.forEach(item => {
+                if (isCollapsing) {
+                    item.classList.add('collapsed');
+                } else {
+                    item.classList.remove('collapsed');
+                }
+            });
+
+            button.textContent = isCollapsing ? 'Expand All' : 'Collapse All';
+        }
+
+        // Add click event listener for toggle all button
+        document.getElementById('toggleAllResults').addEventListener('click', toggleAllResults);
 
         // Form submission
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
