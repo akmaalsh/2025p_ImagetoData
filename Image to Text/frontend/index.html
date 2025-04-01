@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Images to Text Converter</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Images to Text Converter</h1>
+        <p class="description">Transform your images into structured text using OpenAI's GPT-4o model.</p>
+        <p class="author">by Akmal Shldn</p>
+
+        <!-- Upload Section -->
+        <div class="section">
+            <div class="section-header">
+                <div class="step-number">1</div>
+                <h2>Upload Images</h2>
+            </div>
+            <div class="section-content">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="imageInput" name="imageFile" accept="image/*" multiple required>
+                    <div class="upload-text">
+                        <p>Drop your images here or click to browse</p>
+                        <p class="upload-hint">Supports: JPG, PNG, GIF</p>
+                    </div>
+                </div>
+                <div id="fileList" class="file-list"></div>
+            </div>
+        </div>
+
+        <!-- Process Section -->
+        <div class="section">
+            <div class="section-header">
+                <div class="step-number">2</div>
+                <h2>Process Images</h2>
+            </div>
+            <div class="section-content">
+                <button id="submitButton" class="process-button">Extract Text</button>
+                <div id="progress" class="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-text">Processing... <span id="progressPercent">0%</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="section">
+            <div class="section-header">
+                <div class="step-number">3</div>
+                <h2>Results</h2>
+                <button id="toggleAllResults" class="toggle-all-button">Collapse All</button>
+            </div>
+            <div class="section-content">
+                <div id="resultsList" class="results-list"></div>
+                <div class="download-options">
+                    <div class="download-group">
+                        <div class="download-group-label">Text Format</div>
+                        <button id="downloadTxtButton" class="download-button" disabled>Download as TXT</button>
+                        <button id="downloadTxtCombined" class="download-button" disabled>Download as Single TXT</button>
+                    </div>
+                    <div class="download-group">
+                        <div class="download-group-label">Document Format</div>
+                        <button id="downloadDocxButton" class="download-button" disabled>Download as DOCX</button>
+                        <button id="downloadDocxCombined" class="download-button" disabled>Download as Single DOCX</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2024 Images to Text Converter. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
