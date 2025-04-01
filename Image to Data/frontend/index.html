@@ -76,8 +76,16 @@
                     <div class="section-content">
                         <div id="resultsList" class="results-list"></div>
                         <div class="download-options">
-                            <button id="downloadExcel" class="download-button">Download All as Excel</button>
-                            <button id="downloadCSV" class="download-button">Download All as CSV</button>
+                            <div class="download-group">
+                                <div class="download-group-label">Excel Format</div>
+                                <button id="downloadExcelSeparate" class="download-button">Download as Separate Sheets</button>
+                                <button id="downloadExcelCombined" class="download-button">Download as Single Sheet</button>
+                            </div>
+                            <div class="download-group">
+                                <div class="download-group-label">CSV Format</div>
+                                <button id="downloadCSV" class="download-button">Download as Separate Files</button>
+                                <button id="downloadCSVCombined" class="download-button">Download as Single File</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -200,29 +208,39 @@
                 
                 if (result.success) {
                     resultItem.innerHTML = `
-                        <h3>${result.filename}</h3>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>${result.data.headers.map(h => `<th>${h}</th>`).join('')}</tr>
-                                </thead>
-                                <tbody>
-                                    ${result.data.rows.map(row => 
-                                        `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
-                                    ).join('')}
-                                </tbody>
-                            </table>
+                        <h3 onclick="toggleResult(this)">${result.filename}</h3>
+                        <div class="content">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>${result.data.headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                                    </thead>
+                                    <tbody>
+                                        ${result.data.rows.map(row => 
+                                            `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
+                                        ).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     `;
                 } else {
                     resultItem.innerHTML = `
-                        <h3>${result.filename}</h3>
-                        <p class="error-message">Error: ${result.error}</p>
+                        <h3 onclick="toggleResult(this)">${result.filename}</h3>
+                        <div class="content">
+                            <p class="error-message">Error: ${result.error}</p>
+                        </div>
                     `;
                 }
                 
                 resultsList.appendChild(resultItem);
             });
+        }
+
+        // Toggle result collapse/expand
+        function toggleResult(header) {
+            const resultItem = header.parentElement;
+            resultItem.classList.toggle('collapsed');
         }
 
         // Form submission
@@ -286,14 +304,14 @@
         });
 
         // Download handlers
-        document.getElementById('downloadExcel').addEventListener('click', () => {
+        document.getElementById('downloadExcelSeparate').addEventListener('click', () => {
             const results = document.querySelectorAll('.result-item.success');
             if (results.length === 0) {
                 alert('No successful results to download');
                 return;
             }
 
-            // Create workbook
+            // Create workbook with separate sheets
             const wb = XLSX.utils.book_new();
             
             results.forEach((result, index) => {
@@ -304,11 +322,57 @@
                 const ws = XLSX.utils.table_to_sheet(table);
                 
                 // Add worksheet to workbook
-                XLSX.utils.book_append_sheet(wb, ws, `Table ${index + 1}`);
+                const filename = result.querySelector('h3').textContent;
+                XLSX.utils.book_append_sheet(wb, ws, filename.substring(0, 31)); // Excel sheet name limit
             });
 
             // Save workbook
-            XLSX.writeFile(wb, 'extracted_tables.xlsx');
+            XLSX.writeFile(wb, 'extracted_tables_separate.xlsx');
+        });
+
+        document.getElementById('downloadExcelCombined').addEventListener('click', () => {
+            const results = document.querySelectorAll('.result-item.success');
+            if (results.length === 0) {
+                alert('No successful results to download');
+                return;
+            }
+
+            // Create workbook with single sheet
+            const wb = XLSX.utils.book_new();
+            let allRows = [];
+            let headers = [];
+
+            // Collect all data
+            results.forEach((result, index) => {
+                const table = result.querySelector('table');
+                if (!table) return;
+
+                const ws = XLSX.utils.table_to_sheet(table);
+                const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+                if (index === 0) {
+                    headers = data[0];
+                    allRows.push(data[0]); // Add headers only once
+                }
+
+                // Add filename column to each row
+                const filename = result.querySelector('h3').textContent;
+                data.slice(1).forEach(row => {
+                    allRows.push([filename, ...row]);
+                });
+            });
+
+            // Create worksheet with combined data
+            const ws = XLSX.utils.aoa_to_sheet([
+                ['Filename', ...headers],
+                ...allRows.slice(1)
+            ]);
+
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Combined Data');
+
+            // Save workbook
+            XLSX.writeFile(wb, 'extracted_tables_combined.xlsx');
         });
 
         document.getElementById('downloadCSV').addEventListener('click', () => {
@@ -339,12 +403,55 @@
                 const url = window.URL.createObjectURL(content);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'extracted_tables.zip';
+                a.download = 'extracted_tables_separate.zip';
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             });
+        });
+
+        document.getElementById('downloadCSVCombined').addEventListener('click', () => {
+            const results = document.querySelectorAll('.result-item.success');
+            if (results.length === 0) {
+                alert('No successful results to download');
+                return;
+            }
+
+            let allRows = [];
+            let headers = [];
+
+            // Collect all data
+            results.forEach((result, index) => {
+                const table = result.querySelector('table');
+                if (!table) return;
+
+                const ws = XLSX.utils.table_to_sheet(table);
+                const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+                if (index === 0) {
+                    headers = data[0];
+                    allRows.push(['Filename', ...headers].join(',')); // Add headers with filename column
+                }
+
+                // Add filename to each row
+                const filename = result.querySelector('h3').textContent;
+                data.slice(1).forEach(row => {
+                    allRows.push([filename, ...row].join(','));
+                });
+            });
+
+            // Create and download CSV file
+            const csv = allRows.join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'extracted_tables_combined.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

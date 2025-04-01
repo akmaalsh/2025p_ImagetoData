@@ -415,12 +415,35 @@ footer {
 }
 
 .result-item h3 {
+    display: flex;
+    align-items: center;
     padding: 1rem;
     margin: 0;
-    background: var(--background-secondary);
-    color: var(--text-color);
-    font-size: 1rem;
-    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    border-radius: var(--border-radius);
+    position: relative;
+}
+
+.result-item h3::after {
+    content: '▼';
+    margin-left: auto;
+    transform: rotate(0deg);
+    transition: transform 0.3s ease;
+}
+
+.result-item.collapsed h3::after {
+    transform: rotate(-90deg);
+}
+
+.result-item .content {
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.5s ease-in-out;
+}
+
+.result-item.collapsed .content {
+    max-height: 0;
 }
 
 .result-item.success {
@@ -468,57 +491,62 @@ footer {
 }
 
 .download-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
     margin-top: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.download-group {
     display: flex;
-    gap: 1rem;
-    justify-content: center;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.download-group-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.1em;
 }
 
 .download-button {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: var(--border-radius);
+    background: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    text-align: left;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    transition: all 0.2s ease;
 }
 
-.download-button:first-child {
-    background-color: var(--success-color);
+.download-button:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
-.download-button:first-child:hover {
-    background-color: var(--success-hover);
-    transform: translateY(-2px);
+.download-button:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
 }
 
-.download-button:last-child {
-    background-color: var(--primary-color);
-}
-
-.download-button:last-child:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-}
-
-/* Responsive Design */
 @media (max-width: 768px) {
-    .container {
-        padding: 1rem;
-    }
-
-    .section {
-        padding: 1.5rem;
-    }
-
     .download-options {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
-
+    
     .download-button {
         width: 100%;
-        justify-content: center;
     }
 }
 
