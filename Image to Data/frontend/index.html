@@ -26,10 +26,18 @@
                         <h2>Upload Images</h2>
                     </div>
                     <div class="section-content">
-                        <input type="file" id="imageFile" name="imageFile" accept="image/*" multiple>
+                        <div class="upload-area" id="dropZone">
+                            <input type="file" id="imageFile" name="imageFile" accept="image/*" multiple>
+                            <div class="upload-text">
+                                <p>Drag and drop image files here</p>
+                                <p>or</p>
+                                <p>Click to select files</p>
+                                <p class="upload-hint">Supported formats: JPG, PNG, GIF</p>
+                            </div>
+                        </div>
                         <div id="fileList" class="file-list"></div>
                     </div>
-        </div>
+                </div>
 
                 <div class="section">
                     <div class="section-header">
@@ -110,10 +118,38 @@
         // File list management
         const fileInput = document.getElementById('imageFile');
         const fileList = document.getElementById('fileList');
+        const dropZone = document.getElementById('dropZone');
+        
+        // Drag and drop handling
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--primary-color)';
+            dropZone.style.background = 'var(--background-color)';
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            dropZone.style.background = 'var(--background-secondary)';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-color)';
+            dropZone.style.background = 'var(--background-secondary)';
+            
+            const files = e.dataTransfer.files;
+            fileInput.files = files;
+            updateFileList(files);
+        });
         
         fileInput.addEventListener('change', () => {
+            updateFileList(fileInput.files);
+        });
+
+        function updateFileList(files) {
             fileList.innerHTML = '';
-            Array.from(fileInput.files).forEach(file => {
+            Array.from(files).forEach(file => {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item';
                 fileItem.innerHTML = `
@@ -122,7 +158,7 @@
                 `;
                 fileList.appendChild(fileItem);
             });
-        });
+        }
 
         // Column management
         const columnCount = document.getElementById('columnCount');

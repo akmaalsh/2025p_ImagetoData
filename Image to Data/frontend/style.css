@@ -141,8 +141,7 @@ label {
 }
 
 input[type="text"],
-input[type="number"],
-input[type="file"] {
+input[type="number"] {
     width: 100%;
     max-width: 500px;
     padding: 0.75rem;
@@ -151,6 +150,49 @@ input[type="file"] {
     font-size: 1rem;
     margin-bottom: 1rem;
     transition: border-color 0.15s ease;
+}
+
+.upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--background-secondary);
+    margin-bottom: 1rem;
+}
+
+.upload-area:hover {
+    border-color: var(--primary-color);
+    background: var(--background-color);
+}
+
+.upload-area input[type="file"] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+    margin: 0;
+}
+
+.upload-text {
+    pointer-events: none;
+}
+
+.upload-text p {
+    margin: 0.5rem 0;
+    color: var(--text-color);
+}
+
+.upload-hint {
+    color: var(--text-secondary) !important;
+    font-size: 0.9rem;
+    margin-top: 1rem !important;
 }
 
 input[type="text"]:focus,
