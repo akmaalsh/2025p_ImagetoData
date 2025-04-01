@@ -155,7 +155,7 @@ input[type="number"] {
 .upload-area {
     border: 2px dashed var(--border-color);
     border-radius: 0.75rem;
-    padding: 2rem;
+    padding: 3rem 2rem;
     text-align: center;
     position: relative;
     cursor: pointer;
@@ -164,7 +164,7 @@ input[type="number"] {
     margin-bottom: 1rem;
 }
 
-.upload-area:hover {
+.upload-area:hover, .upload-area.drag-over {
     border-color: var(--primary-color);
     background: var(--background-color);
 }
@@ -187,12 +187,13 @@ input[type="number"] {
 .upload-text p {
     margin: 0.5rem 0;
     color: var(--text-color);
+    font-size: 1.1rem;
 }
 
-.upload-hint {
-    color: var(--text-secondary) !important;
+.upload-text p.upload-hint {
+    color: var(--text-secondary);
     font-size: 0.9rem;
-    margin-top: 1rem !important;
+    margin-top: 1rem;
 }
 
 input[type="text"]:focus,
@@ -339,55 +340,44 @@ footer {
 
 .file-list {
     margin-top: 1rem;
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid var(--border-color);
-    border-radius: 0.75rem;
-    background: var(--background-secondary);
 }
 
 .file-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
-    background: var(--surface-color);
-    margin: 0.5rem;
+    padding: 0.75rem;
+    background: var(--background-secondary);
     border-radius: 0.5rem;
-    transition: transform 0.2s ease;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
 }
 
 .file-item:hover {
-    transform: translateX(4px);
+    background: var(--background-color);
 }
 
 .file-name {
-    font-size: 0.9rem;
     color: var(--text-color);
     font-weight: 500;
 }
 
 .file-status {
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     padding: 0.25rem 0.75rem;
     border-radius: 1rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.file-status.pending {
-    background-color: var(--background-secondary);
+    background: var(--background-color);
     color: var(--text-secondary);
 }
 
 .file-status.success {
-    background-color: #dcfce7;
-    color: var(--success-color);
+    background: #dcfce7;
+    color: #166534;
 }
 
 .file-status.error {
-    background-color: #fee2e2;
-    color: var(--error-color);
+    background: #fee2e2;
+    color: #991b1b;
 }
 
 .progress-container {

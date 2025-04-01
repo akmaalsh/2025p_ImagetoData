@@ -163,13 +163,6 @@ app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req
             results: []
         });
 
-        // Process files concurrently with rate limiting
-        const CONCURRENT_LIMIT = 5;
-        const chunks = [];
-        for (let i = 0; i < files.length; i += CONCURRENT_LIMIT) {
-            chunks.push(files.slice(i, i + CONCURRENT_LIMIT));
-        }
-
         // Send initial response
         res.json({ 
             success: true, 
@@ -178,15 +171,12 @@ app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req
             wsPort: wsPort
         });
 
-        // Process chunks sequentially, but files within chunks concurrently
-        for (const chunk of chunks) {
-            const chunkPromises = chunk.map(file => 
-                processImage(file, imageDescription, columnCount, columnNames, columnExamples)
-            );
-
-            const chunkResults = await Promise.all(chunkPromises);
-            results.push(...chunkResults);
-            processedCount += chunk.length;
+        // Process files sequentially
+        for (const file of files) {
+            // Process single file
+            const result = await processImage(file, imageDescription, columnCount, columnNames, columnExamples);
+            results.push(result);
+            processedCount++;
 
             // Update progress via WebSocket
             const progress = Math.round((processedCount / totalFiles) * 100);
@@ -196,7 +186,7 @@ app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req
                     progress,
                     processedCount,
                     totalFiles,
-                    latestResults: chunkResults
+                    latestResults: [result]
                 }));
             });
 
@@ -207,10 +197,8 @@ app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req
                 jobInfo.results = results;
             }
 
-            // Add a small delay between chunks to avoid rate limiting
-            if (chunks.length > 1) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+            // Add a small delay between files to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         // Mark job as complete

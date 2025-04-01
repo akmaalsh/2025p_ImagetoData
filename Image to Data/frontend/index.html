@@ -32,7 +32,7 @@
                                 <p>Drag and drop image files here</p>
                                 <p>or</p>
                                 <p>Click to select files</p>
-                                <p class="upload-hint">Supported formats: JPG, PNG, GIF</p>
+                                <p class="upload-hint">Supported formats: JPG, PNG</p>
                             </div>
                         </div>
                         <div id="fileList" class="file-list"></div>
@@ -113,38 +113,58 @@
     <script>
         let ws = null;
         let currentJobId = null;
-        const API_BASE_URL = 'http://localhost:3000';
+        const API_BASE_URL = 'http://localhost:3000';  // Change back to fixed URL
 
         // File list management
         const fileInput = document.getElementById('imageFile');
         const fileList = document.getElementById('fileList');
         const dropZone = document.getElementById('dropZone');
         
-        // Drag and drop handling
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.style.borderColor = 'var(--primary-color)';
-            dropZone.style.background = 'var(--background-color)';
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
         });
 
-        dropZone.addEventListener('dragleave', (e) => {
+        function preventDefaults (e) {
             e.preventDefault();
-            dropZone.style.borderColor = 'var(--border-color)';
-            dropZone.style.background = 'var(--background-secondary)';
+            e.stopPropagation();
+        }
+
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
         });
 
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.style.borderColor = 'var(--border-color)';
-            dropZone.style.background = 'var(--background-secondary)';
-            
-            const files = e.dataTransfer.files;
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('drag-over');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('drag-over');
+        }
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
             fileInput.files = files;
             updateFileList(files);
-        });
-        
+        }
+
+        // File input change handler
         fileInput.addEventListener('change', () => {
-            updateFileList(fileInput.files);
+            handleFiles(fileInput.files);
         });
 
         function updateFileList(files) {
@@ -317,26 +337,33 @@
             });
 
             // Add other form data
-            formData.append('imageDescription', document.getElementById('imageDescription').value);
-            formData.append('columnCount', columnCount.value);
+            const imageDescription = document.getElementById('imageDescription').value || '';
+            formData.append('imageDescription', imageDescription);
+            
+            const colCount = columnCount.value;
+            formData.append('columnCount', colCount);
             
             // Add column details
-            const columnNames = document.getElementsByName('columnNames');
-            const columnExamples = document.getElementsByName('columnExamples');
+            const columnNames = Array.from(document.getElementsByName('columnNames')).map(input => input.value);
+            const columnExamples = Array.from(document.getElementsByName('columnExamples')).map(input => input.value);
             
-            Array.from(columnNames).forEach(input => {
-                formData.append('columnNames', input.value);
+            columnNames.forEach(name => {
+                formData.append('columnNames', name);
             });
             
-            Array.from(columnExamples).forEach(input => {
-                formData.append('columnExamples', input.value);
+            columnExamples.forEach(example => {
+                formData.append('columnExamples', example);
             });
 
             try {
                 // Show progress container
-                document.getElementById('progressContainer').style.display = 'block';
-                document.getElementById('progressBar').style.width = '0%';
-                document.getElementById('progressText').textContent = 'Starting processing...';
+                const progressContainer = document.getElementById('progressContainer');
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressText.textContent = 'Starting processing...';
 
                 // Submit the form
                 const response = await fetch(`${API_BASE_URL}/api/extract-tables-batch`, {
@@ -344,18 +371,24 @@
                     body: formData
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 
                 if (data.success) {
                     currentJobId = data.jobId;
                     connectWebSocket(data.wsPort);
                 } else {
-                    throw new Error(data.error);
+                    throw new Error(data.error || 'Failed to process request');
                 }
 
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred: ' + error.message);
+                // Reset progress display
+                document.getElementById('progressContainer').style.display = 'none';
             }
         });
 

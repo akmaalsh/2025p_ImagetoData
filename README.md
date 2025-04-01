@@ -1,6 +1,6 @@
 # Images to Data & Text Converter
 
-A web application that extracts text and tabular data from images using OpenAI's GPT-4 Vision model. This project consists of two main applications:
+A web application that extracts text and tabular data from images using OpenAI's GPT-4o model. This project consists of two main applications:
 
 1. **Images to Data Converter**: Extracts tabular data from images and converts them into structured formats
 2. **Images to Text Converter**: Extracts paragraphs and text content from images
@@ -19,17 +19,14 @@ A web application that extracts text and tabular data from images using OpenAI's
 - Extracts tables from images
 - Preserves table structure
 - Download options:
-  - Excel (separate sheets)
-  - Excel (single sheet)
-  - CSV format
-  - Text format
+  - Excel (single or separate sheets)
+  - CSV (single or separate sheets)
 
 ### Images to Text Converter
 - Extracts paragraphs and text content
 - Maintains text organization
 - Download options:
-  - Excel (separate sheets)
-  - Excel (single sheet)
+  - Excel (single or separate sheets)
   - CSV format
   - Text format
 
@@ -85,7 +82,7 @@ A web application that extracts text and tabular data from images using OpenAI's
 
 ### Backend
 - Node.js server with Express
-- OpenAI GPT-4 Vision API integration
+- OpenAI GPT-4o model API integration
 - Concurrent request handling
 - Error handling and validation
 
@@ -131,6 +128,6 @@ Created by Akmal Shalahuddin
 - LinkedIn: [Akmal Shalahuddin](https://www.linkedin.com/in/akmalshalahuddin/)
 
 ## Acknowledgments
-- OpenAI for the GPT-4 Vision API
+- OpenAI for the GPT-4o model API
 - SheetJS for Excel file handling
 - The open-source community for various tools and libraries used 
