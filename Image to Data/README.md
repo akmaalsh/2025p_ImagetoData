@@ -1,6 +1,15 @@
-# Image Table Extractor Application
+# Image(s) to Data Converter
 
-This application allows users to upload an image containing a table and uses the OpenAI API (GPT-4 Vision model) to extract the data into a structured format (HTML table).
+A modern web application that transforms tables in images into structured data formats using OpenAI's GPT-4V (GPT-4 Vision) model. Perfect for converting tables from images into Excel or CSV format with high accuracy.
+
+## Features
+
+* **Advanced AI Processing:** Utilizes OpenAI's GPT-4V model for accurate table extraction
+* **Multiple Format Support:** Export data to both Excel and CSV formats
+* **Batch Processing:** Upload and process multiple images at once
+* **Context-Aware:** Provide image context for better extraction accuracy
+* **Modern UI:** Clean, responsive interface with step-by-step guidance
+* **Real-time Status:** Visual feedback during processing
 
 ## Prerequisites
 
@@ -78,15 +87,18 @@ If you prefer to run the servers manually:
 
 ## Using the Application
 
-1. Once the application is running, you'll see a simple web interface
-2. Click "Choose File" and select an image containing a data table
-3. Click the "Extract Table" button
-4. Wait for the processing to complete (you'll see a loading indicator)
-5. The extracted table data will be displayed below
+1. Once the application is running, you'll see a modern web interface with clear instructions
+2. **Step 1:** Click "Choose Files" to select one or more images containing data tables
+3. **Step 2:** Provide context about the table(s) to improve extraction accuracy
+4. **Step 3:** Click "Extract Tables" to begin processing
+5. **Step 4:** Once processing is complete, you can:
+   - View the extracted data in table format
+   - Download the results as Excel or CSV
+   - Process more images as needed
 
 ## Important Notes
 
-* **API Costs:** Each table extraction uses the OpenAI API, which has associated costs. Be mindful of your usage.
+* **API Costs:** Each table extraction uses the OpenAI GPT-4V API, which has associated costs. Be mindful of your usage.
 * **Image Quality:** The accuracy of table extraction depends on:
   - Image quality and resolution
   - Table complexity and layout
@@ -109,3 +121,12 @@ If you prefer to run the servers manually:
 * To stop the application:
   - If using the launcher: Press Ctrl+C in the terminal
   - If running manually: Press Ctrl+C in both terminal windows
+
+## Credits
+
+Created by [Akmal Shldn](https://github.com/akmaalsh)
+
+## Links
+
+* [GitHub Repository](https://github.com/akmaalsh/2025p_ImagetoData)
+* [Developer's LinkedIn](https://www.linkedin.com/in/akmalshalahuddin/)
