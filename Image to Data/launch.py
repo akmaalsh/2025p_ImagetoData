@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import webbrowser
+import time
 from pathlib import Path
 
 def launch_servers():
@@ -18,50 +19,67 @@ def launch_servers():
         ["node", "server.js"],
         cwd=backend_dir,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        universal_newlines=True
     )
 
-    # Wait a moment for the backend to start
-    import time
+    # Wait and check if backend started successfully
     time.sleep(2)
+    backend_output = backend_process.stdout.readline().strip()
+    print(f"Backend: {backend_output}")
 
     # Launch frontend server
-    print("🌐 Starting frontend server...")
+    print("\n🌐 Starting frontend server...")
     frontend_process = subprocess.Popen(
-        ["npx", "serve", "."],
+        ["npx", "serve"],
         cwd=frontend_dir,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        universal_newlines=True
     )
 
-    # Wait a moment for the frontend to start and capture its output
-    time.sleep(2)
-    
-    # Read the frontend server output to get the URL
-    frontend_output = frontend_process.stdout.readline().decode('utf-8')
-    # Usually serve outputs something like "Serving!..." on first line
-    # and the URL on second line
-    frontend_url = frontend_process.stdout.readline().decode('utf-8').strip()
-    
-    if "http" in frontend_url:
-        url = frontend_url.split(" ")[-1]  # Get the last word which should be the URL
+    # Wait for frontend to start and get the URL
+    frontend_url = None
+    start_time = time.time()
+    while time.time() - start_time < 10:  # Wait up to 10 seconds
+        line = frontend_process.stdout.readline().strip()
+        print(f"Frontend: {line}")
+        if "http" in line:
+            frontend_url = line.split(" ")[-1].strip()
+            break
+        time.sleep(0.1)
+
+    if not frontend_url:
+        frontend_url = "http://localhost:3000"  # Fallback URL
+        print("\n⚠️  Could not detect frontend URL, using fallback:", frontend_url)
     else:
-        url = "http://localhost:3001"  # Fallback URL
+        print("\n✨ Frontend URL detected:", frontend_url)
 
     # Open the browser
-    print("\n✨ Opening browser...")
-    webbrowser.open(url)
+    print("\n🌐 Opening browser...")
+    webbrowser.open(frontend_url)
 
     print("\n✅ Application is running!")
-    print(f"Frontend is available at: {url}")
+    print(f"Frontend is available at: {frontend_url}")
     print("Backend is running at: http://localhost:3000")
+    print("\n📝 If the page doesn't open automatically, copy and paste the frontend URL into your browser.")
     print("\nTo stop the servers, press Ctrl+C in this terminal window.")
     print("Note: You may need to close your browser window as well.")
 
     try:
-        # Keep the script running and handle Ctrl+C
+        # Keep the script running and show server output
         while True:
-            time.sleep(1)
+            backend_line = backend_process.stdout.readline()
+            if backend_line:
+                print("Backend:", backend_line.strip())
+            frontend_line = frontend_process.stdout.readline()
+            if frontend_line:
+                print("Frontend:", frontend_line.strip())
+            time.sleep(0.1)
     except KeyboardInterrupt:
         print("\n\n🛑 Stopping servers...")
         backend_process.terminate()
