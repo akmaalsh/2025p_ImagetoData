@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image(s) to Data Converter</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -285,14 +287,66 @@
 
         // Download handlers
         document.getElementById('downloadExcel').addEventListener('click', () => {
-            // Implement Excel download
-            alert('Excel download functionality will be implemented');
+            const results = document.querySelectorAll('.result-item.success');
+            if (results.length === 0) {
+                alert('No successful results to download');
+                return;
+            }
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            
+            results.forEach((result, index) => {
+                const table = result.querySelector('table');
+                if (!table) return;
+
+                // Convert table to worksheet
+                const ws = XLSX.utils.table_to_sheet(table);
+                
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(wb, ws, `Table ${index + 1}`);
+            });
+
+            // Save workbook
+            XLSX.writeFile(wb, 'extracted_tables.xlsx');
         });
 
         document.getElementById('downloadCSV').addEventListener('click', () => {
-            // Implement CSV download
-            alert('CSV download functionality will be implemented');
+            const results = document.querySelectorAll('.result-item.success');
+            if (results.length === 0) {
+                alert('No successful results to download');
+                return;
+            }
+
+            // Create zip containing all CSVs
+            const zip = new JSZip();
+            
+            results.forEach((result, index) => {
+                const table = result.querySelector('table');
+                if (!table) return;
+
+                // Convert table to CSV
+                const ws = XLSX.utils.table_to_sheet(table);
+                const csv = XLSX.utils.sheet_to_csv(ws);
+                
+                // Add to zip
+                const filename = result.querySelector('h3').textContent;
+                zip.file(`${filename}.csv`, csv);
+            });
+
+            // Generate and download zip
+            zip.generateAsync({type: "blob"}).then(function(content) {
+                const url = window.URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'extracted_tables.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            });
         });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>
