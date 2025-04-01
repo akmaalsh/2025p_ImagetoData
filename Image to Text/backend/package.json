@@ -1,0 +1,27 @@
+{
+    "name": "image-paragraph-backend",
+    "version": "1.0.0",
+    "description": "Backend for Image to Paragraph Extractor using OpenAI",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+      "openai",
+      "image",
+      "text",
+      "paragraph",
+      "ocr",
+      "express"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+      "cors": "^2.8.5",
+      "dotenv": "^16.3.1",
+      "express": "^4.18.2",
+      "multer": "^1.4.5-lts.1",
+      "openai": "^4.20.1"
+    }
+  }
