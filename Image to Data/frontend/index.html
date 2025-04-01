@@ -14,8 +14,7 @@
             <h1>Image(s) to Data Converter</h1>
             <p class="author">by Akmal Shldn</p>
             <div class="description">
-                <p>Transform your image tables into structured data using OpenAI's GPT-4V (GPT-4 Vision) model.</p>
-                <p>Perfect for converting tables from images into Excel or CSV format with high accuracy.</p>
+                <p>Transform your image tables into structured data using OpenAI's GPT-4o model.</p>
             </div>
         </header>
 
@@ -30,7 +29,7 @@
                         <input type="file" id="imageFile" name="imageFile" accept="image/*" multiple>
                         <div id="fileList" class="file-list"></div>
                     </div>
-                </div>
+        </div>
 
                 <div class="section">
                     <div class="section-header">
@@ -38,9 +37,9 @@
                         <h2>Define Table Context</h2>
                     </div>
                     <div class="section-content">
-                        <label for="imageDescription">Image Context/Description:</label>
-                        <input type="text" id="imageDescription" name="imageDescription" placeholder="e.g., Concordance KBKI 2015 to KBLI 2020">
-                        
+             <label for="imageDescription">Image Context/Description:</label>
+             <input type="text" id="imageDescription" name="imageDescription" placeholder="e.g., Concordance KBKI 2015 to KBLI 2020">
+
                         <div class="columns-section">
                             <label>Number of Columns:</label>
                             <input type="number" id="columnCount" name="columnCount" min="1" required>
@@ -65,8 +64,8 @@
                             </div>
                             <p id="progressText">Processing: 0/0 files (0%)</p>
                         </div>
-                    </div>
-                </div>
+                 </div>
+        </div>
 
                 <div id="resultsSection" class="section" style="display: none;">
                     <div class="section-header">
@@ -89,8 +88,8 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </form>
+         </div>
+    </form>
         </main>
 
         <footer>
@@ -99,7 +98,7 @@
                 <a href="https://github.com/akmaalsh" target="_blank" rel="noopener noreferrer">Akmal's GitHub</a>
                 <span class="separator">•</span>
                 <a href="https://www.linkedin.com/in/akmalshalahuddin/" target="_blank" rel="noopener noreferrer">Akmal's LinkedIn</a>
-            </div>
+        </div>
         </footer>
     </div>
 
