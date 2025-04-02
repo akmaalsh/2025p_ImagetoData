@@ -19,12 +19,13 @@ console.log(`WebSocket server is running on port ${wsPort}`);
 const activeJobs = new Map();
 
 // --- Configuration ---
-const openaiApiKey = process.env.OPENAI_API_KEY;
-if (!openaiApiKey) {
-    console.error("FATAL ERROR: OPENAI_API_KEY environment variable not set.");
-    process.exit(1);
-}
-const openai = new OpenAI({ apiKey: openaiApiKey });
+// Remove the environment variable check since we'll use user-provided keys
+// const openaiApiKey = process.env.OPENAI_API_KEY;
+// if (!openaiApiKey) {
+//     console.error("FATAL ERROR: OPENAI_API_KEY environment variable not set.");
+//     process.exit(1);
+// }
+// const openai = new OpenAI({ apiKey: openaiApiKey });
 
 // --- Middleware ---
 app.use(cors());
@@ -37,8 +38,9 @@ const upload = multer({
 });
 
 // Utility function to process a single image
-async function processImage(imageFile, imageDescription, columnCount, columnNames, columnExamples) {
+async function processImage(imageFile, imageDescription, columnCount, columnNames, columnExamples, apiKey) {
     try {
+        const openai = new OpenAI({ apiKey }); // Create new instance with user's key
         const base64Image = imageFile.buffer.toString('base64');
         const mimeType = imageFile.mimetype || 'image/jpeg';
 
@@ -129,6 +131,15 @@ ${columnDescriptions}
 // Batch processing endpoint
 app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req, res) => {
     try {
+        // Check for API key in headers
+        const apiKey = req.headers['x-api-key'];
+        if (!apiKey) {
+            return res.status(401).json({ success: false, error: "API key required" });
+        }
+        if (!apiKey.startsWith('sk-')) {
+            return res.status(401).json({ success: false, error: "Invalid API key format" });
+        }
+
         const files = req.files;
         if (!files || files.length === 0) {
             return res.status(400).json({ success: false, error: "No files uploaded" });
@@ -174,7 +185,7 @@ app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req
         // Process files sequentially
         for (const file of files) {
             // Process single file
-            const result = await processImage(file, imageDescription, columnCount, columnNames, columnExamples);
+            const result = await processImage(file, imageDescription, columnCount, columnNames, columnExamples, apiKey);
             results.push(result);
             processedCount++;
 
@@ -255,6 +266,18 @@ app.get('/api/job-status/:jobId', (req, res) => {
 
 // Keep the existing single file endpoint
 app.post('/api/extract-table', upload.any(), async (req, res) => {
+    // Check for API key in headers
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+        return res.status(401).json({ success: false, error: "API key required" });
+    }
+    if (!apiKey.startsWith('sk-')) {
+        return res.status(401).json({ success: false, error: "Invalid API key format" });
+    }
+
+    // Create OpenAI instance with user's API key
+    const openai = new OpenAI({ apiKey });
+
     // Log received body and files for debugging
     console.log("Received req.body:", JSON.stringify(req.body, null, 2));
     console.log("Received req.files:", req.files);

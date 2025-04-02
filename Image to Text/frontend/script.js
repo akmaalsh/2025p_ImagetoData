@@ -16,6 +16,54 @@ const toggleAllResults = document.getElementById('toggleAllResults');
 // Use the correct port for this backend (defaulting to 3001)
 const BACKEND_API_URL = 'http://localhost:3001/api/extract-paragraphs';
 
+// Check for API key when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    checkApiKey();
+});
+
+// API Key Handling
+function checkApiKey() {
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+        document.getElementById('apiKeyModal').style.display = 'block';
+        return false;
+    }
+    return apiKey;
+}
+
+function saveApiKey() {
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (!apiKey) {
+        alert('Please enter a valid API key');
+        return;
+    }
+    if (!apiKey.startsWith('sk-')) {
+        alert('API key should start with "sk-"');
+        return;
+    }
+    localStorage.setItem('openai_api_key', apiKey);
+    document.getElementById('apiKeyModal').style.display = 'none';
+}
+
+function toggleApiKeyVisibility() {
+    const input = document.getElementById('apiKeyInput');
+    const button = document.getElementById('toggleApiKey');
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = 'Hide';
+    } else {
+        input.type = 'password';
+        button.textContent = 'Show';
+    }
+}
+
+// Add function to clear API key
+function clearApiKey() {
+    localStorage.removeItem('openai_api_key');
+    document.getElementById('apiKeyModal').style.display = 'block';
+    document.getElementById('apiKeyInput').value = '';
+}
+
 // --- State for Aggregated Data ---
 let imageResults = []; // Store results for each image: [{filename, paragraphs}]
 let totalFiles = 0;
@@ -42,6 +90,9 @@ imageInput.addEventListener('change', (event) => {
 
 // --- Button Click Handler ---
 submitButton.addEventListener('click', async () => {
+    const apiKey = checkApiKey();
+    if (!apiKey) return;
+
     const files = imageInput.files;
     if (!files || files.length === 0) {
         showError("Please select one or more image files.");
@@ -83,10 +134,20 @@ submitButton.addEventListener('click', async () => {
         try {
             const response = await fetch(BACKEND_API_URL, {
                 method: 'POST',
+                headers: {
+                    'X-API-Key': apiKey
+                },
                 body: formData,
             });
 
             const data = await response.json();
+
+            // Handle API key errors
+            if (response.status === 401) {
+                showError("Invalid or expired API key. Please enter a new key.");
+                clearApiKey();
+                return;
+            }
 
             if (!response.ok || !data.success) {
                 const errorMsg = data.error || `Server error processing ${file.name}`;

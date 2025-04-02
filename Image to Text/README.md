@@ -44,6 +44,7 @@ app.post('/api/extract-paragraphs', upload.single('imageFile'), async (req, res)
    - Results display
    - Download options
    - Social links and credits
+   - API key input modal
 
 2. **JavaScript Functions**
    - File handling
@@ -51,12 +52,14 @@ app.post('/api/extract-paragraphs', upload.single('imageFile'), async (req, res)
    - Results formatting
    - Download generation
    - Error handling
+   - API key management
 
 3. **CSS Styling (`/frontend/style.css`)**
    - Modern interface design
    - Responsive layout
    - Progress animations
    - Results formatting
+   - Modal styling
 
 ## Data Flow
 
@@ -101,9 +104,23 @@ const response = await openai.chat.completions.create({
 
 ## API Integration
 
-1. **OpenAI Setup**
+1. **API Key Management**
 ```javascript
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Frontend API key handling
+function checkApiKey() {
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+        document.getElementById('apiKeyModal').style.display = 'block';
+        return false;
+    }
+    return apiKey;
+}
+
+// Backend API key validation
+const apiKey = req.headers['x-api-key'];
+if (!apiKey || !apiKey.startsWith('sk-')) {
+    return res.status(401).json({ success: false, error: "Invalid API key" });
+}
 ```
 
 2. **Response Processing**

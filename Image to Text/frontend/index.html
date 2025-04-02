@@ -11,11 +11,27 @@
     <div class="container">
         <header>
             <h1>Image(s) to Text Converter</h1>
-            <p class="author">by Akmal Shldn</p>
             <div class="description">
                 <p>Extract text and paragraphs from images using OpenAI's GPT-4o model.</p>
             </div>
+            <button onclick="clearApiKey()" class="reset-key-button">Reset API Key</button>
         </header>
+
+        <div id="apiKeyModal" class="modal">
+            <div class="modal-content">
+                <h2>OpenAI API Key Required</h2>
+                <p>Please enter your OpenAI API key to use this service. You can get one from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI's website</a>.</p>
+                <div class="api-key-input-container">
+                    <input type="password" id="apiKeyInput" placeholder="sk-...">
+                    <button onclick="toggleApiKeyVisibility()" id="toggleApiKey">Show</button>
+                </div>
+                <button onclick="saveApiKey()" class="primary-button">Save Key</button>
+                <div class="api-key-info">
+                    <p>Your API key is stored securely in your browser and never sent to our servers.</p>
+                    <p>Make sure you have appropriate usage limits set on your API key.</p>
+                </div>
+            </div>
+        </div>
 
         <div class="section">
             <h2>Upload Images</h2>

@@ -8,12 +8,13 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // --- Configuration ---
-const openaiApiKey = process.env.OPENAI_API_KEY;
-if (!openaiApiKey) {
-    console.error("FATAL ERROR: OPENAI_API_KEY environment variable not set.");
-    process.exit(1);
-}
-const openai = new OpenAI({ apiKey: openaiApiKey });
+// Remove the environment variable check since we'll use user-provided keys
+// const openaiApiKey = process.env.OPENAI_API_KEY;
+// if (!openaiApiKey) {
+//     console.error("FATAL ERROR: OPENAI_API_KEY environment variable not set.");
+//     process.exit(1);
+// }
+// const openai = new OpenAI({ apiKey: openaiApiKey });
 
 // --- Prompt for Paragraph Extraction ---
 const PARAGRAPH_EXTRACTION_PROMPT = `Analyze the provided image containing text. Your goal is to extract the textual content, organized by paragraphs.
@@ -42,6 +43,18 @@ const upload = multer({
 // --- API Endpoint ---
 app.post('/api/extract-paragraphs', upload.single('imageFile'), async (req, res) => {
     console.log(`Received request to /api/extract-paragraphs for file: ${req.file?.originalname}`);
+
+    // Check for API key in headers
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+        return res.status(401).json({ success: false, error: "API key required" });
+    }
+    if (!apiKey.startsWith('sk-')) {
+        return res.status(401).json({ success: false, error: "Invalid API key format" });
+    }
+
+    // Create OpenAI instance with user's API key
+    const openai = new OpenAI({ apiKey });
 
     if (!req.file) {
         return res.status(400).json({ success: false, error: "No image file provided." });

@@ -44,6 +44,7 @@ app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req
    - Progress tracking display
    - Results section with collapsible items
    - Download options interface
+   - API key input modal
 
 2. **JavaScript Functions**
    - WebSocket connection management
@@ -51,12 +52,14 @@ app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req
    - Progress tracking
    - Dynamic column management
    - Download functionality
+   - API key management (storage and validation)
 
 3. **CSS Styling (`/frontend/style.css`)**
    - Modern UI components
    - Responsive design
    - Progress animations
    - Results formatting
+   - Modal styling
 
 ## Data Flow
 
@@ -91,9 +94,23 @@ app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req
 
 ## API Integration
 
-1. **OpenAI Configuration**
+1. **API Key Management**
 ```javascript
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Frontend API key handling
+function checkApiKey() {
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+        document.getElementById('apiKeyModal').style.display = 'block';
+        return false;
+    }
+    return apiKey;
+}
+
+// Backend API key validation
+const apiKey = req.headers['x-api-key'];
+if (!apiKey || !apiKey.startsWith('sk-')) {
+    return res.status(401).json({ success: false, error: "Invalid API key" });
+}
 ```
 
 2. **API Call Structure**

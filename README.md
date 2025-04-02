@@ -14,6 +14,7 @@ A web application that extracts text and tabular data from images using OpenAI's
 - Real-time progress tracking
 - Collapsible results view
 - Multiple download formats
+- Secure API key handling with browser storage
 
 ### Images to Data Converter
 - Extracts tables from images
@@ -49,12 +50,7 @@ A web application that extracts text and tabular data from images using OpenAI's
    npm install
    ```
 
-3. Create a `.env` file in the backend directory with your OpenAI API key:
-   ```
-   OPENAI_API_KEY=your_api_key_here
-   ```
-
-4. Start the application:
+3. Start the application:
    ```bash
    # Using the launch script
    python launch.py
@@ -67,6 +63,19 @@ A web application that extracts text and tabular data from images using OpenAI's
    # Start frontend (from frontend directory)
    npx serve
    ```
+
+4. When you first open the application, you'll be prompted to enter your OpenAI API key:
+   - The key is stored securely in your browser's localStorage
+   - It's never sent to our servers
+   - You can reset it anytime using the "Reset API Key" button
+   - Get your API key from [OpenAI's website](https://platform.openai.com/api-keys)
+
+5. If your API key becomes invalid or expires:
+   - The application will automatically detect the error
+   - You'll be prompted to enter a new API key
+   - The old key will be cleared from your browser
+   - Enter your new API key to continue using the application
+   - You can also manually reset your API key using the "Reset API Key" button
 
 ## Technical Details
 
@@ -82,6 +91,7 @@ A web application that extracts text and tabular data from images using OpenAI's
 - Responsive design
 - Real-time status updates
 - SheetJS for Excel file generation
+- Secure API key management
 
 ## File Structure
 ```
@@ -108,9 +118,11 @@ A web application that extracts text and tabular data from images using OpenAI's
 ```
 
 ## Security
-- The `.env` file containing the API key is not included in the repository
+- API keys are stored securely in the browser's localStorage
+- Keys are never sent to our servers
 - Input validation on both frontend and backend
 - Secure file handling
+- Clear user instructions for API key management
 
 ## Author & Credits
 Created by Akmal Shalahuddin
