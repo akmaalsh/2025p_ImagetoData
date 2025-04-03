@@ -1,162 +1,132 @@
-# Image to Data Code Documentation
+# Image(s) to Data Converter
 
-## Code Structure
+A modern web application that transforms tables in images into structured data formats using OpenAI's GPT-4V (GPT-4 Vision) model. Perfect for converting tables from images into Excel or CSV format with high accuracy.
 
-### Backend (`/backend/server.js`)
+## Features
 
-The backend server handles image processing and data extraction using OpenAI's GPT-4o model.
+* **Advanced AI Processing:** Utilizes OpenAI's GPT-4V model for accurate table extraction
+* **Multiple Format Support:** Export data to both Excel and CSV formats
+* **Batch Processing:** Upload and process multiple images at once
+* **Context-Aware:** Provide image context for better extraction accuracy
+* **Modern UI:** Clean, responsive interface with step-by-step guidance
+* **Real-time Status:** Visual feedback during processing
 
-#### Key Components:
+## Prerequisites
 
-1. **Server Setup**
-```javascript
-const express = require('express');
-const app = express();
-const port = process.env.PORT || 3000;
-const wsPort = 3001;
-```
-- Express server on port 3000
-- WebSocket server on port 3001 for real-time updates
+* **Node.js and npm:** Download and install from [https://nodejs.org/](https://nodejs.org/) (LTS version recommended)
+* **OpenAI API Key:** You need an API key from OpenAI. Get one at [https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys)
+* **Python 3.x:** Required for the launcher script (included in most modern operating systems)
+* **npx serve:** Will be installed automatically when running the application
 
-2. **Image Processing Function**
-```javascript
-async function processImage(imageFile, imageDescription, columnCount, columnNames, columnExamples)
-```
-- Converts image to base64
-- Constructs dynamic prompt for GPT-4o
-- Validates and processes API response
-- Returns structured data or error
+## Setup
 
-3. **Batch Processing Endpoint**
-```javascript
-app.post('/api/extract-tables-batch', upload.array('imageFiles', 50), async (req, res)
-```
-- Handles multiple file uploads (up to 50 files)
-- Sequential processing of images
-- Real-time progress updates via WebSocket
-- Job tracking with unique IDs
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/akmaalsh/2025p_ImagetoData.git
+    cd 2025p_ImagetoData
+    ```
 
-### Frontend Structure
+2.  **Install Backend Dependencies:**
+    ```bash
+    cd "Image to Data/backend"
+    npm install
+    ```
 
-1. **HTML (`/frontend/index.html`)**
-   - Upload section with drag-and-drop
-   - Column configuration inputs
-   - Progress tracking display
-   - Results section with collapsible items
-   - Download options interface
-   - API key input modal
+3.  **Configure Backend Environment:**
+    * Create a file named `.env` inside the `backend/` directory
+    * Add your OpenAI API key to the `.env` file:
+        ```
+        OPENAI_API_KEY=sk-YourActualOpenAiApiKeyGoesHere
+        ```
+    * The `.env` file is already in `.gitignore` to prevent accidentally committing your API key
 
-2. **JavaScript Functions**
-   - WebSocket connection management
-   - File upload handling
-   - Progress tracking
-   - Dynamic column management
-   - Download functionality
-   - API key management (storage and validation)
+## Running the Application
 
-3. **CSS Styling (`/frontend/style.css`)**
-   - Modern UI components
-   - Responsive design
-   - Progress animations
-   - Results formatting
-   - Modal styling
+### Option 1: Using the Python Launcher (Recommended)
 
-## Data Flow
+The easiest way to run the application is using the Python launcher script:
 
-1. **Upload Process**
-   ```javascript
-   // Frontend sends files and configuration
-   formData.append('imageFiles', file);
-   formData.append('columnCount', count);
-   formData.append('columnNames', names);
+1. Open a terminal/command prompt
+2. Navigate to the project directory:
+   ```bash
+   cd "Image to Data"
+   ```
+3. Run the launcher script:
+   ```bash
+   python launch.py
    ```
 
-2. **Processing Pipeline**
-   ```javascript
-   // Backend processes each file
-   for (const file of files) {
-       const result = await processImage(file, ...);
-       // Send progress via WebSocket
-   }
-   ```
+The launcher script will:
+- Start the backend server
+- Start the frontend server
+- Display the URLs for both servers
+- Automatically open your default web browser to the frontend
+- Show real-time server output in the terminal
+- Handle graceful shutdown when you press Ctrl+C
 
-3. **Results Handling**
-   ```javascript
-   // Backend response structure
-   {
-       success: true,
-       data: {
-           headers: [...],
-           rows: [[...], [...]]
-       }
-   }
-   ```
+### Option 2: Manual Launch
 
-## API Integration
+If you prefer to run the servers manually:
 
-1. **API Key Management**
-```javascript
-// Frontend API key handling
-function checkApiKey() {
-    const apiKey = localStorage.getItem('openai_api_key');
-    if (!apiKey) {
-        document.getElementById('apiKeyModal').style.display = 'block';
-        return false;
-    }
-    return apiKey;
-}
+1.  **Start the Backend Server:**
+    ```bash
+    cd "Image to Data/backend"
+    node server.js
+    ```
+    Keep this terminal running.
 
-// Backend API key validation
-const apiKey = req.headers['x-api-key'];
-if (!apiKey || !apiKey.startsWith('sk-')) {
-    return res.status(401).json({ success: false, error: "Invalid API key" });
-}
-```
+2.  **Start the Frontend Server:**
+    * Open a new terminal window
+    * Navigate to the frontend directory:
+    ```bash
+    cd "Image to Data/frontend"
+    npx serve
+    ```
+    * Copy the URL shown in the terminal (usually something like `http://localhost:3000`)
+    * Open the URL in your web browser
 
-2. **API Call Structure**
-```javascript
-const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-        {
-            role: "user",
-            content: [
-                { type: "text", text: dynamicPrompt },
-                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Image}` } }
-            ]
-        }
-    ]
-});
-```
+## Using the Application
 
-## Error Handling
+1. Once the application is running, you'll see a modern web interface with clear instructions
+2. **Step 1:** Click "Choose Files" to select one or more images containing data tables
+3. **Step 2:** Provide context about the table(s) to improve extraction accuracy
+4. **Step 3:** Click "Extract Tables" to begin processing
+5. **Step 4:** Once processing is complete, you can:
+   - View the extracted data in table format
+   - Download the results as Excel or CSV
+   - Process more images as needed
 
-1. **Input Validation**
-```javascript
-if (isNaN(columnCount) || columnCount <= 0) {
-    return res.status(400).json({ success: false, error: "Invalid column count" });
-}
-```
+## Important Notes
 
-2. **Processing Errors**
-```javascript
-try {
-    const parsedData = JSON.parse(jsonString);
-    // Validation checks...
-} catch (error) {
-    return { success: false, error: error.message };
-}
-```
+* **API Costs:** Each table extraction uses the OpenAI GPT-4V API, which has associated costs. Be mindful of your usage.
+* **Image Quality:** The accuracy of table extraction depends on:
+  - Image quality and resolution
+  - Table complexity and layout
+  - Text clarity and formatting
+* **Error Handling:**
+  - Check the browser's developer console (F12) for frontend errors
+  - Check the terminal output for backend errors
+  - Common issues include invalid API keys or network problems
+* **Security:** Your OpenAI API key is:
+  - Only stored locally in the `.env` file
+  - Only used by the backend server
+  - Never exposed to the frontend
+  - Protected from accidental commits by `.gitignore`
 
-## Launch Script (`launch.py`)
-- Starts both frontend and backend servers
-- Opens browser automatically
-- Displays server output in real-time
-- Handles server shutdown
+## Troubleshooting
 
-## Dependencies
-- express: Web server framework
-- multer: File upload handling
-- ws: WebSocket implementation
-- openai: OpenAI API client
-- cors: Cross-origin resource sharing 
+* If the browser doesn't open automatically, copy the frontend URL from the terminal and paste it into your browser
+* If you see "Invalid API Key" errors, check your `.env` file configuration
+* If the servers won't start, make sure no other applications are using ports 3000 or 3001
+* To stop the application:
+  - If using the launcher: Press Ctrl+C in the terminal
+  - If running manually: Press Ctrl+C in both terminal windows
+
+## Credits
+
+Created by [Akmal Shldn](https://github.com/akmaalsh)
+
+## Links
+
+* [GitHub Repository](https://github.com/akmaalsh/2025p_ImagetoData)
+* [Developer's LinkedIn](https://www.linkedin.com/in/akmalshalahuddin/)
