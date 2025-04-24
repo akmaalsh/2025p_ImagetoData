@@ -1,18 +1,153 @@
 const uploadForm = document.getElementById('uploadForm');
-const imageInput = document.getElementById('imageInput');
-const submitButton = document.getElementById('submitButton');
-const progressDiv = document.getElementById('progress');
+const imageInput = document.getElementById('imageFile');
+const submitButton = document.getElementById('extractButton');
+const progressDiv = document.getElementById('progressContainer');
+const progressBarElem = document.getElementById('progressBar');
+const progressTextElem = document.getElementById('progressText');
 const errorDiv = document.getElementById('error');
-const resultsDiv = document.getElementById('resultsTableContainer');
+const resultsDiv = document.getElementById('resultsList');
 const downloadButtonsDiv = document.getElementById('downloadButtons');
-const downloadCsvButton = document.getElementById('downloadCsvButton');
-const downloadXlsxButton = document.getElementById('downloadXlsxButton');
+const downloadCsvButton = document.getElementById('downloadCSV');
+const downloadXlsxButton = document.getElementById('downloadExcelSeparate');
 const columnCountInput = document.getElementById('columnCount');
 const columnInputsWrapper = document.getElementById('columnInputsWrapper');
 const imageDescriptionInput = document.getElementById('imageDescription');
 const aggregationInfoDiv = document.getElementById('aggregationInfo');
+const fileList = document.getElementById('fileList');
+const dropZone = document.getElementById('dropZone');
+
+// WebSocket related variables
+let ws = null;
+let currentJobId = null;
+const API_BASE_URL = 'http://localhost:3000';
 
 const BACKEND_API_URL = 'http://localhost:3000/api/extract-table';
+
+// --- Drag and drop handling ---
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--primary-color)';
+    dropZone.style.background = 'var(--background-color)';
+});
+
+dropZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--border-color)';
+    dropZone.style.background = 'var(--background-secondary)';
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--border-color)';
+    dropZone.style.background = 'var(--background-secondary)';
+    
+    const files = e.dataTransfer.files;
+    imageInput.files = files;
+    updateFileList(files);
+});
+
+imageInput.addEventListener('change', () => {
+    updateFileList(imageInput.files);
+});
+
+function updateFileList(files) {
+    fileList.innerHTML = '';
+    Array.from(files).forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <span class="file-name">${file.name}</span>
+            <span class="file-status">Pending</span>
+        `;
+        fileList.appendChild(fileItem);
+    });
+}
+
+// --- WebSocket handling ---
+function connectWebSocket(port) {
+    ws = new WebSocket(`ws://localhost:${port}`);
+    
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        updateProgress(data);
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket connection closed');
+    };
+}
+
+// --- Progress tracking ---
+function updateProgress(data) {
+    progressDiv.style.display = 'block';
+    progressBarElem.style.width = `${data.progress}%`;
+    progressTextElem.textContent = `Processing: ${data.processedCount}/${data.totalFiles} files (${data.progress}%)`;
+
+    // Update file statuses
+    if (data.latestResults) {
+        data.latestResults.forEach(result => {
+            const fileItems = document.querySelectorAll('.file-item');
+            const fileItem = Array.from(fileItems).find(item => 
+                item.querySelector('.file-name').textContent === result.filename
+            );
+            
+            if (fileItem) {
+                const statusSpan = fileItem.querySelector('.file-status');
+                statusSpan.textContent = result.success ? 'Completed' : 'Failed';
+                statusSpan.className = `file-status ${result.success ? 'success' : 'error'}`;
+            }
+        });
+    }
+
+    // Handle completion
+    if (data.status === 'complete') {
+        document.getElementById('resultsSection').style.display = 'block';
+        displayResults(data.finalResults);
+    }
+}
+
+// --- Results display for batch processing ---
+function displayResults(results) {
+    resultsDiv.innerHTML = '';
+
+    results.results.forEach((result, index) => {
+        const resultItem = document.createElement('div');
+        resultItem.className = `result-item ${result.success ? 'success' : 'error'}`;
+        
+        if (result.success) {
+            resultItem.innerHTML = `
+                <h3 onclick="toggleResult(this)">${result.filename}</h3>
+                <div class="content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>${result.data.headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                            </thead>
+                            <tbody>
+                                ${result.data.rows.map(row => 
+                                    `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
+                                ).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } else {
+            resultItem.innerHTML = `
+                <h3 onclick="toggleResult(this)">${result.filename}</h3>
+                <div class="content">
+                    <p class="error-message">Error: ${result.error}</p>
+                </div>
+            `;
+        }
+        
+        resultsDiv.appendChild(resultItem);
+    });
+}
 
 // --- State for Aggregated Data ---
 let allExtractedData = {
@@ -25,47 +160,28 @@ let successfulFiles = 0; // Count successful extractions
 // --- Dynamic Column Input Generation ---
 function generateColumnInputs() {
     const count = parseInt(columnCountInput.value, 10);
-    columnInputsWrapper.innerHTML = ''; // Clear previous
+    const columnDetails = document.getElementById('columnDetails');
+    columnDetails.innerHTML = ''; // Clear previous
 
     if (!isNaN(count) && count > 0) {
         for (let i = 0; i < count; i++) {
-            const div = document.createElement('div');
-            div.className = 'column-input-row'; // Add class for styling
-
-            const nameLabel = document.createElement('label');
-            nameLabel.textContent = `Col ${i + 1} Name: `;
-            nameLabel.htmlFor = `colName${i}`;
-            const nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.id = `colName${i}`;
-            nameInput.name = `columnNames[]`; // Use array notation for backend
-            nameInput.required = true;
-            nameInput.placeholder = `Enter Name`;
-
-            const exampleLabel = document.createElement('label');
-            exampleLabel.textContent = ` Example: `;
-            exampleLabel.htmlFor = `colExample${i}`;
-            const exampleInput = document.createElement('input');
-            exampleInput.type = 'text';
-            exampleInput.id = `colExample${i}`;
-            exampleInput.name = `columnExamples[]`; // Use array notation
-            exampleInput.placeholder = `(Optional)`;
-
-            div.appendChild(nameLabel);
-            div.appendChild(nameInput);
-            div.appendChild(exampleLabel);
-            div.appendChild(exampleInput);
-            columnInputsWrapper.appendChild(div);
+            const columnDiv = document.createElement('div');
+            columnDiv.className = 'column-input';
+            columnDiv.innerHTML = `
+                <label>Column ${i + 1}:</label>
+                <input type="text" name="columnNames" placeholder="Column name" required>
+                <input type="text" name="columnExamples" placeholder="Example content">
+            `;
+            columnDetails.appendChild(columnDiv);
         }
     }
 }
 // Add event listener
-columnCountInput.addEventListener('input', generateColumnInputs);
+columnCountInput.addEventListener('change', generateColumnInputs);
 // Initial call based on default value
 generateColumnInputs();
 
-
-// --- Form Submission Handler ---
+// --- Form Submission Handler (for single file processing) ---
 uploadForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -86,10 +202,63 @@ uploadForm.addEventListener('submit', async (event) => {
     clearMessages();
     showProgress(true, `Starting processing for ${files.length} file(s)...`);
     resultsDiv.innerHTML = '<p>Processing...</p>';
-    downloadButtonsDiv.style.display = 'none';
     submitButton.disabled = true;
     submitButton.textContent = 'Processing...';
 
+    // Try batch processing if multiple files
+    if (files.length > 1) {
+        try {
+            const formData = new FormData();
+            
+            // Add files
+            Array.from(files).forEach(file => {
+                formData.append('imageFiles', file);
+            });
+
+            // Add other form data
+            formData.append('imageDescription', imageDescriptionInput.value);
+            formData.append('columnCount', columnCountInput.value);
+            
+            // Add column details
+            const columnNames = document.getElementsByName('columnNames');
+            const columnExamples = document.getElementsByName('columnExamples');
+            
+            Array.from(columnNames).forEach(input => {
+                formData.append('columnNames', input.value);
+            });
+            
+            Array.from(columnExamples).forEach(input => {
+                formData.append('columnExamples', input.value);
+            });
+
+            // Show progress container
+            progressDiv.style.display = 'block';
+            progressBarElem.style.width = '0%';
+            progressTextElem.textContent = 'Starting processing...';
+
+            // Submit the form
+            const response = await fetch(`${API_BASE_URL}/api/extract-tables-batch`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                currentJobId = data.jobId;
+                connectWebSocket(data.wsPort);
+                return; // Exit early as batch processing takes over
+            } else {
+                console.warn("Batch processing failed, falling back to individual processing:", data.error);
+                // Continue with individual processing below
+            }
+        } catch (error) {
+            console.warn("Batch processing error, falling back to individual processing:", error);
+            // Continue with individual processing below
+        }
+    }
+
+    // Process files individually
     let processedFileCount = 0;
 
     for (let i = 0; i < files.length; i++) {
@@ -103,8 +272,8 @@ uploadForm.addEventListener('submit', async (event) => {
         // Context data (same for all files in this batch)
         formData.append('imageDescription', imageDescriptionInput.value);
         formData.append('columnCount', columnCountInput.value);
-        document.querySelectorAll('input[name="columnNames[]"]').forEach(input => formData.append('columnNames[]', input.value));
-        document.querySelectorAll('input[name="columnExamples[]"]').forEach(input => formData.append('columnExamples[]', input.value));
+        document.querySelectorAll('input[name="columnNames"]').forEach(input => formData.append('columnNames', input.value));
+        document.querySelectorAll('input[name="columnExamples"]').forEach(input => formData.append('columnExamples', input.value));
 
         try {
             const response = await fetch(BACKEND_API_URL, {
@@ -112,7 +281,14 @@ uploadForm.addEventListener('submit', async (event) => {
                 body: formData,
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                appendMessage(`Error parsing response for ${file.name}: ${jsonError.message}`, 'error');
+                console.error('JSON parsing error:', jsonError);
+                continue;
+            }
 
             // Handle backend errors or logical failures
             if (!response.ok || !data.success) {
@@ -153,7 +329,7 @@ uploadForm.addEventListener('submit', async (event) => {
             successfulFiles++;
 
         } catch (error) {
-            appendMessage(`Network or Parsing error processing ${file.name}. Check console.`, 'error');
+            appendMessage(`Network or Processing error for ${file.name}: ${error.message}`, 'error');
             console.error(`Workspace/Parse Error for ${file.name}:`, error);
         }
     } // End loop
@@ -164,35 +340,37 @@ uploadForm.addEventListener('submit', async (event) => {
     submitButton.textContent = 'Extract Tables';
     imageInput.value = ''; // Clear file input selection
 
-    aggregationInfoDiv.textContent = ''; // Clear previous aggregation info
-
+    const resultsSection = document.getElementById('resultsSection');
     if (successfulFiles > 0) {
+        if (resultsSection) {
+            resultsSection.style.display = 'block';
+        }
         renderTable(allExtractedData); // Render aggregated results
-        downloadButtonsDiv.style.display = 'block';
-        downloadCsvButton.disabled = false;
-        downloadXlsxButton.disabled = false;
-         if (files.length > 1) {
-             aggregationInfoDiv.textContent = `Showing aggregated data from ${successfulFiles} of ${files.length} processed file(s). Check messages above for skipped files or warnings.`;
-         }
+        if (successfulFiles > 1 && aggregationInfoDiv) {
+            aggregationInfoDiv.textContent = `Showing aggregated data from ${successfulFiles} of ${files.length} processed file(s). Check messages above for skipped files or warnings.`;
+        }
     } else {
-         resultsDiv.innerHTML = '<p>No table data extracted successfully.</p>';
-         if (!errorDiv.textContent && files.length > 0) {
+        resultsDiv.innerHTML = '<p>No table data extracted successfully.</p>';
+        if (!errorDiv.textContent && files.length > 0) {
             showError("Could not extract any valid table data from the provided image(s).");
-         } else if (!errorDiv.textContent && files.length === 0) {
-             resultsDiv.innerHTML = '<p>No files selected.</p>';
-         }
-         downloadButtonsDiv.style.display = 'none';
-         downloadCsvButton.disabled = true;
-         downloadXlsxButton.disabled = true;
+        } else if (!errorDiv.textContent && files.length === 0) {
+            resultsDiv.innerHTML = '<p>No files selected.</p>';
+        }
     }
-
 }); // End of form submit listener
 
 // --- Helper Functions ---
 
 function showProgress(isLoading, message = '') {
     progressDiv.style.display = isLoading ? 'block' : 'none';
-    if(isLoading) progressDiv.textContent = message;
+    if(isLoading) {
+        // Try to extract percentage if present in the message
+        const percentMatch = message.match(/\d+%/);
+        if (percentMatch) {
+            progressBarElem.style.width = percentMatch[0];
+        }
+        progressTextElem.textContent = message;
+    }
 }
 
 function clearMessages() {
@@ -210,7 +388,6 @@ function showError(message) {
         errorDiv.style.display = 'block';
         errorDiv.classList.add('critical-error');
         resultsDiv.innerHTML = '<p>Processing failed.</p>'; // Update results view on critical error
-        downloadButtonsDiv.style.display = 'none';
     }
 }
 
@@ -238,64 +415,64 @@ function appendMessage(message, type = 'warning') {
      ul.appendChild(li);
 }
 
-
 // Renders the AGGREGATED table data
 function renderTable(tableData) {
     resultsDiv.innerHTML = ''; // Clear previous content or 'Processing...' msg
 
     if (!tableData || !tableData.headers || !Array.isArray(tableData.headers) || tableData.headers.length === 0) {
         resultsDiv.innerHTML = '<p>No headers found in extracted data.</p>';
-        downloadButtonsDiv.style.display = 'none';
         return;
     }
 
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const tbody = document.createElement('tbody');
-    const headerCount = tableData.headers.length;
-
-    const headerRow = document.createElement('tr');
-    tableData.headers.forEach(headerText => {
-        const th = document.createElement('th');
-        th.textContent = headerText;
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-
-    const rows = tableData.rows || [];
-    if (rows.length === 0) {
-         const row = document.createElement('tr');
-         const cell = document.createElement('td');
-         cell.colSpan = headerCount;
-         cell.textContent = "No data rows extracted successfully.";
-         cell.style.textAlign = "center";
-         row.appendChild(cell);
-         tbody.appendChild(row);
-         downloadButtonsDiv.style.display = 'none'; // No rows to download
-    } else {
-        rows.forEach(rowData => {
-            const row = document.createElement('tr');
-            const currentRowData = Array.isArray(rowData) ? rowData : [];
-            // Render cells based on header count, use "" for missing data
-            // Backend validation should ensure consistency, but double-check here
-            for (let i = 0; i < headerCount; i++) {
-                 const td = document.createElement('td');
-                 td.textContent = (currentRowData[i] !== undefined && currentRowData[i] !== null) ? currentRowData[i] : '';
-                 row.appendChild(td);
-            }
-            // Ensure row has correct number of cells visually (optional defense)
-            while(row.cells.length < headerCount) {
-                 row.appendChild(document.createElement('td'));
-            }
-            tbody.appendChild(row);
-        });
-         downloadButtonsDiv.style.display = (headerCount > 0 && rows.length > 0) ? 'block' : 'none';
-    }
-
-    table.appendChild(thead);
-    table.appendChild(tbody);
-    resultsDiv.appendChild(table);
+    const resultItem = document.createElement('div');
+    resultItem.className = 'result-item success';
+    
+    resultItem.innerHTML = `
+        <h3 onclick="toggleResult(this)">Combined Results</h3>
+        <div class="content">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>${tableData.headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${tableData.rows.length === 0 ? 
+                            `<tr><td colspan="${tableData.headers.length}" style="text-align: center">No data rows extracted successfully.</td></tr>` : 
+                            tableData.rows.map(row => 
+                                `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
+                            ).join('')
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    resultsDiv.appendChild(resultItem);
 }
+
+// Toggle result collapse/expand
+window.toggleResult = function(header) {
+    const resultItem = header.parentElement;
+    resultItem.classList.toggle('collapsed');
+};
+
+// Toggle all results
+document.getElementById('toggleAllResults')?.addEventListener('click', function() {
+    const button = this;
+    const resultItems = document.querySelectorAll('.result-item');
+    const isCollapsing = button.textContent === 'Collapse All';
+
+    resultItems.forEach(item => {
+        if (isCollapsing) {
+            item.classList.add('collapsed');
+        } else {
+            item.classList.remove('collapsed');
+        }
+    });
+
+    button.textContent = isCollapsing ? 'Expand All' : 'Collapse All';
+});
 
 // --- Download Functions ---
 // Operate on the aggregated 'allExtractedData'
@@ -373,24 +550,109 @@ function triggerDownload(blob, filename) {
      }
 }
 
-// Attach listeners using the aggregated data state
-downloadCsvButton.addEventListener('click', () => {
+// Attach listeners for the download buttons
+document.getElementById('downloadCSV')?.addEventListener('click', () => {
     if (allExtractedData && allExtractedData.rows.length > 0) {
         downloadCSV(allExtractedData);
     } else {
-         alert("No successful aggregated data available to download.");
-     }
-});
-downloadXlsxButton.addEventListener('click', () => {
-     if (allExtractedData && allExtractedData.rows.length > 0) {
-         downloadXLSX(allExtractedData);
-     } else {
         alert("No successful aggregated data available to download.");
-     }
+    }
 });
 
-// --- Initial State ---
-generateColumnInputs(); // Generate inputs based on default column count
-downloadButtonsDiv.style.display = 'none';
-resultsDiv.innerHTML = '<p>No data extracted yet.';
-clearMessages();
+document.getElementById('downloadExcelSeparate')?.addEventListener('click', () => {
+    if (allExtractedData && allExtractedData.rows.length > 0) {
+        downloadXLSX(allExtractedData);
+    } else {
+        alert("No successful aggregated data available to download.");
+    }
+});
+
+// Handle Excel combined downloads
+document.getElementById('downloadExcelCombined')?.addEventListener('click', () => {
+    const results = document.querySelectorAll('.result-item.success');
+    if (results.length === 0) {
+        alert('No successful results to download');
+        return;
+    }
+
+    // Create workbook with single sheet
+    const wb = XLSX.utils.book_new();
+    let allRows = [];
+    let headers = [];
+
+    // Collect all data
+    results.forEach((result, index) => {
+        const table = result.querySelector('table');
+        if (!table) return;
+
+        const ws = XLSX.utils.table_to_sheet(table);
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        if (index === 0) {
+            headers = data[0];
+            allRows.push(data[0]); // Add headers only once
+        }
+
+        // Add filename column to each row
+        const filename = result.querySelector('h3').textContent;
+        data.slice(1).forEach(row => {
+            allRows.push([filename, ...row]);
+        });
+    });
+
+    // Create worksheet with combined data
+    const ws = XLSX.utils.aoa_to_sheet([
+        ['Filename', ...headers],
+        ...allRows.slice(1)
+    ]);
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Combined Data');
+
+    // Save workbook
+    XLSX.writeFile(wb, 'extracted_tables_combined.xlsx');
+});
+
+// Handle CSV combined downloads
+document.getElementById('downloadCSVCombined')?.addEventListener('click', () => {
+    const results = document.querySelectorAll('.result-item.success');
+    if (results.length === 0) {
+        alert('No successful results to download');
+        return;
+    }
+
+    let allRows = [];
+    let headers = [];
+
+    // Collect all data
+    results.forEach((result, index) => {
+        const table = result.querySelector('table');
+        if (!table) return;
+
+        const ws = XLSX.utils.table_to_sheet(table);
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        if (index === 0) {
+            headers = data[0];
+            allRows.push(['Filename', ...headers].join(',')); // Add headers with filename column
+        }
+
+        // Add filename to each row
+        const filename = result.querySelector('h3').textContent;
+        data.slice(1).forEach(row => {
+            allRows.push([filename, ...row].join(','));
+        });
+    });
+
+    // Create and download CSV file
+    const csv = allRows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'extracted_tables_combined.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+});

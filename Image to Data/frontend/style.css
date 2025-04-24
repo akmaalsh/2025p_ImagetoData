@@ -251,15 +251,35 @@ button:disabled {
 
 .status {
     padding: 1rem;
-    margin: 1rem 0;
     border-radius: 0.5rem;
-    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
 }
 
 #error {
-    background-color: #fef2f2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    display: none;
+}
+
+.status.error.has-messages {
+    display: block;
+}
+
+.status.error ul {
+    margin: 0.5rem 0 0 0;
+    padding-left: 1.5rem;
+}
+
+.status.error.critical-error {
+    background-color: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    font-weight: 500;
+}
+
+#progress {
+    margin: 1rem 0;
 }
 
 #progress {

@@ -1,4 +1,7 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
+console.log('Current working directory:', process.cwd());
+console.log('Attempting to load API key:', process.env.OPENAI_API_KEY ? 'Found API key' : 'API key not found');
+
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -278,9 +281,9 @@ app.post('/api/extract-table', upload.any(), async (req, res) => {
         return res.status(400).json({ success: false, error: "No image file with fieldname 'imageFile' provided." });
     }
 
-    // --- Validation Block for Text Inputs from req.body (CORRECTED ACCESS) ---
+    // --- Validation Block for Text Inputs from req.body ---
     const { imageDescription: rawImageDesc, columnCount: rawColumnCount } = req.body;
-    // *** CORRECTED: Access keys WITHOUT the [] ***
+    // Handle column names and examples which might be arrays or single values
     const rawColumnNames = req.body.columnNames;
     const rawColumnExamples = req.body.columnExamples;
 
@@ -333,7 +336,7 @@ ${columnDescriptions}
 
 **Output Requirements:**
 
-1.  **Strict JSON Structure:** Output ONLY a JSON object with exactly two keys:
+1.  **Strict JSON Structure:** Output ONLY valid JSON with exactly two keys:
     * \`"headers"\`: An array containing exactly ${columnCount} strings, using these specific names in this exact order: [${finalColumnNames.map(name => `"${name}"`).join(", ")}].
     * \`"rows"\`: An array of arrays, where each inner array represents a single extracted row.
 
@@ -349,8 +352,7 @@ ${columnDescriptions}
 
 7.  **No Table Found:** If no table matching the description is detected, return ONLY \`{"error": "No table detected"}\`.
 
-8.  **Strict Output Format:** Output ONLY the valid JSON object. No explanations or markdown formatting.
-`; // End dynamicPrompt
+8.  **Strict Output Format:** Output ONLY the valid JSON object. No explanations or markdown formatting. The JSON must be properly formatted and parseable.`; // End dynamicPrompt
 
         console.log("Sending dynamic prompt to API...");
         // --- Make API call ---
@@ -375,6 +377,9 @@ ${columnDescriptions}
             const jsonBlockMatch = messageContent.match(/```json\s*([\s\S]*?)\s*```/);
             if (jsonBlockMatch && jsonBlockMatch[1]) jsonString = jsonBlockMatch[1];
 
+            // Clean the JSON string before parsing
+            jsonString = jsonString.trim();
+            
             const parsedData = JSON.parse(jsonString);
 
             // Check for AI-reported error first
@@ -411,7 +416,7 @@ ${columnDescriptions}
         } catch (parseError) {
             console.error("Failed to parse API response as JSON:", parseError);
             console.error("Raw content that failed parsing:", messageContent);
-            res.status(500).json({ success: false, error: "Failed to parse response from API.", raw_response: messageContent });
+            res.status(500).json({ success: false, error: "Failed to parse response from API: " + parseError.message, raw_response: messageContent });
         }
 
     } catch (error) {
