@@ -150,10 +150,12 @@ The backend server handles image processing and text extraction using Google's G
 - API key management
 
 ### Backend  
-- Express.js server
-- Multer for file handling
-- Google Gemini API integration
-- Error handling and validation
+- express: ^5.1.0 - Web framework
+- multer: ^2.0.0 - File upload handling
+- cors: ^2.8.5 - Cross-origin resource sharing
+- dotenv: ^16.5.0 - Environment variable management
+- @google/generative-ai: ^0.24.1 - Google Gemini API client
+- mime-types: ^3.0.1 - MIME type handling and validation
 
 ## Prerequisites
 
@@ -239,11 +241,12 @@ The application includes comprehensive error handling:
 ## Dependencies
 
 ### Backend
-- express: Web framework
-- multer: File upload handling
-- cors: Cross-origin resource sharing
-- dotenv: Environment variable management
-- @google/genai: Google Gemini API client
+- express: ^5.1.0 - Web framework
+- multer: ^2.0.0 - File upload handling
+- cors: ^2.8.5 - Cross-origin resource sharing
+- dotenv: ^16.5.0 - Environment variable management
+- @google/generative-ai: ^0.24.1 - Google Gemini API client
+- mime-types: ^3.0.1 - MIME type handling and validation
 
 ### Frontend
 - Vanilla JavaScript (ES6+)
