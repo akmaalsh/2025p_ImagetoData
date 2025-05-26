@@ -1,5 +1,5 @@
-console.log("--- Server.js script started ---"); 
-require('dotenv').config();
+// console.log("--- Server.js script started ---"); // You can keep or remove this
+require('dotenv').config(); // This line loads variables from .env into process.env
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -7,10 +7,17 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 const mime = require('mime-types');
 
 const app = express();
-// IMPORTANT: Using port 3002 for this Gemini version to avoid conflict with a potential OpenAI version on 3001.
-// You can change this back to 3001 if you are only running this version.
-// If you change it, remember to update it in frontend/script.js and launch.py as well.
 const port = process.env.PORT || 3002;
+
+// Load the API key from environment variables
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+    console.error("FATAL ERROR: GEMINI_API_KEY is not defined in the .env file or environment variables.");
+    // Optionally, you could exit the process if the key is critical for startup,
+    // but for now, we'll let requests fail if the key isn't configured.
+    // process.exit(1); // Uncomment to make the server exit if key is missing
+}
 
 const PARAGRAPH_EXTRACTION_PROMPT = `Analyze the provided image containing text. Your goal is to extract the textual content, organized by paragraphs.
 
@@ -33,15 +40,15 @@ app.use(cors());
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 20 * 1024 * 1024 } // 20MB limit for Multer
+    limits: { fileSize: 20 * 1024 * 1024 }
 });
 
 app.post('/api/extract-paragraphs-gemini', upload.single('imageFile'), async (req, res) => {
     console.log(`Received request to /api/extract-paragraphs-gemini for file: ${req.file?.originalname}`);
 
-    const apiKey = req.headers['x-api-key'];
-    if (!apiKey) {
-        return res.status(401).json({ success: false, error: "API key required" });
+    if (!GEMINI_API_KEY) { // Check if the key was loaded from .env
+        console.error("GEMINI_API_KEY is not configured on the server.");
+        return res.status(500).json({ success: false, error: "API key not configured on the server. Please contact the administrator." });
     }
 
     if (!req.file) {
@@ -49,9 +56,9 @@ app.post('/api/extract-paragraphs-gemini', upload.single('imageFile'), async (re
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY); // Use the key from process.env
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash-latest", // Or "gemini-1.5-pro-latest"
+            model: "gemini-1.5-flash-latest",
             safetySettings: [
                 { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                 { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -87,19 +94,18 @@ app.post('/api/extract-paragraphs-gemini', upload.single('imageFile'), async (re
         ];
 
         console.log(`Sending request to Gemini API with MIME type: ${detectedMimeType}...`);
-
         const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }] });
         
         let messageContent;
         const candidate = result?.response?.candidates?.[0];
 
         if (candidate && candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-            messageContent = candidate.content.parts[0]; // Should be the JSON object
+            messageContent = candidate.content.parts[0];
         } else {
             const textResponse = result?.response?.text?.();
             if (textResponse) {
                 console.log("Gemini did not directly return JSON object, attempting to parse text response.");
-                messageContent = JSON.parse(textResponse); // Fallback if not direct JSON object
+                messageContent = JSON.parse(textResponse);
             } else {
                 throw new Error("No content found in Gemini response or response structure is unexpected.");
             }
@@ -114,7 +120,6 @@ app.post('/api/extract-paragraphs-gemini', upload.single('imageFile'), async (re
         if (typeof messageContent === 'object') {
             parsedData = messageContent;
         } else if (typeof messageContent === 'string') {
-             // This case should be rare if responseMimeType: "application/json" works as expected.
             console.warn("Response content was a string, attempting to parse manually.");
             parsedData = JSON.parse(messageContent);
         } else {
@@ -133,18 +138,23 @@ app.post('/api/extract-paragraphs-gemini', upload.single('imageFile'), async (re
         console.error("Error calling Gemini API or processing its response:", error);
         let errorMessage = "An error occurred while communicating with the Gemini API.";
         let errorDetails = error.message;
-        if (error.message && (error.message.includes("API key not valid") || error.message.includes("invalid api key"))) {
-            errorMessage = "Invalid API key. Please check your Gemini API key.";
-            return res.status(401).json({ success: false, error: errorMessage, details: errorDetails});
-        }
+        // No longer need to check for "API key not valid" from client, as it's server-configured
         res.status(500).json({
             success: false,
             error: errorMessage,
             details: errorDetails,
-            raw_error: error // for more detailed client-side debugging if needed
+            raw_error: error 
         });
     }
 });
 
 app.get('/gemini', (req, res) => res.send('Image Paragraph Extractor Backend (Gemini Version) is running!'));
-app.listen(port, () => console.log(`Gemini Backend server listening at http://localhost:${port}`));
+app.listen(port, () => {
+    if (!GEMINI_API_KEY) {
+        console.warn(`**********************************************************************************`);
+        console.warn(`* WARNING: GEMINI_API_KEY is not set. The API calls will fail.                 *`);
+        console.warn(`* Please create a .env file in the backend directory with your GEMINI_API_KEY. *`);
+        console.warn(`**********************************************************************************`);
+    }
+    console.log(`Gemini Backend server listening at http://localhost:${port}`);
+});
