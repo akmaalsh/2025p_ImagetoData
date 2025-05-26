@@ -40,7 +40,7 @@ async function processImage(imageFile, imageDescription, columnCount, columnName
         // Create Gemini AI instance with user's API key
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash-preview-05-20",
             generationConfig: {
                 // responseMimeType: "application/json", // Enable this if the model/SDK supports forced JSON output
             }
@@ -431,7 +431,7 @@ ${columnDescriptions}
         // --- Create Gemini AI instance with user's API key ---
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash-preview-04-17",
+            model: "gemini-2.5-flash-preview-05-20",
             generationConfig: {
                 // responseMimeType: "application/json", // Enable this if the model/SDK supports forced JSON output
             }

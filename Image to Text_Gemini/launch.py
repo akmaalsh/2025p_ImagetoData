@@ -54,7 +54,7 @@ def launch_servers():
         time.sleep(0.1)
 
     if not frontend_url:
-        frontend_url = "http://localhost:3000"  # Fallback URL
+        frontend_url = "http://localhost:3002"  # Fallback URL
         print("\n⚠️  Could not detect frontend URL, using fallback:", frontend_url)
     else:
         print("\n✨ Frontend URL detected:", frontend_url)
