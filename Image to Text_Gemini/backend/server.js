@@ -1,5 +1,5 @@
-// console.log("--- Server.js script started ---"); // You can keep or remove this
-require('dotenv').config(); // This line loads variables from .env into process.env
+// console.log("--- Server.js script started ---"); // For debugging
+require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -7,17 +7,7 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 const mime = require('mime-types');
 
 const app = express();
-const port = process.env.PORT || 3002;
-
-// Load the API key from environment variables
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-if (!GEMINI_API_KEY) {
-    console.error("FATAL ERROR: GEMINI_API_KEY is not defined in the .env file or environment variables.");
-    // Optionally, you could exit the process if the key is critical for startup,
-    // but for now, we'll let requests fail if the key isn't configured.
-    // process.exit(1); // Uncomment to make the server exit if key is missing
-}
+const port = process.env.PORT || 3002; // Ensure this matches your setup
 
 const PARAGRAPH_EXTRACTION_PROMPT = `Analyze the provided image containing text. Your goal is to extract the textual content, organized by paragraphs.
 
@@ -46,9 +36,9 @@ const upload = multer({
 app.post('/api/extract-paragraphs-gemini', upload.single('imageFile'), async (req, res) => {
     console.log(`Received request to /api/extract-paragraphs-gemini for file: ${req.file?.originalname}`);
 
-    if (!GEMINI_API_KEY) { // Check if the key was loaded from .env
-        console.error("GEMINI_API_KEY is not configured on the server.");
-        return res.status(500).json({ success: false, error: "API key not configured on the server. Please contact the administrator." });
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+        return res.status(401).json({ success: false, error: "API key required" });
     }
 
     if (!req.file) {
@@ -56,7 +46,7 @@ app.post('/api/extract-paragraphs-gemini', upload.single('imageFile'), async (re
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY); // Use the key from process.env
+        const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
             model: "gemini-1.5-flash-latest",
             safetySettings: [
@@ -77,84 +67,98 @@ app.post('/api/extract-paragraphs-gemini', upload.single('imageFile'), async (re
             detectedMimeType = mime.lookup(req.file.originalname) || 'image/jpeg';
         }
         if (!['image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif'].includes(detectedMimeType)) {
-            console.warn(`Unsupported MIME type: ${detectedMimeType}, attempting with image/jpeg`);
+            console.warn(`Unsupported MIME type: ${detectedMimeType}, attempting with image/jpeg as a fallback.`);
             detectedMimeType = 'image/jpeg';
         }
 
+        const textPart = { text: PARAGRAPH_EXTRACTION_PROMPT };
         const imagePart = {
-            inlineData: {
-                data: imageBase64,
-                mimeType: detectedMimeType
-            }
+            inlineData: { data: imageBase64, mimeType: detectedMimeType }
         };
-
-        const promptParts = [
-            PARAGRAPH_EXTRACTION_PROMPT,
-            imagePart
-        ];
+        const promptParts = [textPart, imagePart];
 
         console.log(`Sending request to Gemini API with MIME type: ${detectedMimeType}...`);
         const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }] });
         
-        let messageContent;
+        let jsonString;
         const candidate = result?.response?.candidates?.[0];
 
         if (candidate && candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-            messageContent = candidate.content.parts[0];
-        } else {
-            const textResponse = result?.response?.text?.();
-            if (textResponse) {
-                console.log("Gemini did not directly return JSON object, attempting to parse text response.");
-                messageContent = JSON.parse(textResponse);
+            const firstPart = candidate.content.parts[0];
+            if (firstPart && typeof firstPart.text === 'string') {
+                jsonString = firstPart.text; // The JSON string is in the 'text' property of the first part
+                console.log("Extracted JSON string from response.parts[0].text:", jsonString.substring(0, 250) + "...");
             } else {
+                // This case might occur if parts[0] is the direct object (less likely based on recent findings)
+                // or if the structure is different.
+                console.error("Gemini response parts[0] is not in the expected {text: 'json_string'} format, or text property is missing/not a string:", firstPart);
+                // Attempt to use the full text response as a last resort if parts[0].text wasn't the string
+                const fullTextResponse = result?.response?.text?.();
+                if (fullTextResponse) {
+                    console.log("Falling back to full text response as JSON string.");
+                    jsonString = fullTextResponse;
+                } else {
+                    throw new Error("Unexpected structure in Gemini response part and no fallback text response available.");
+                }
+            }
+        } else {
+            // Fallback if the primary candidate/parts structure isn't found
+            const textResponse = result?.response?.text?.(); 
+            if (textResponse) {
+                console.log("Gemini did not return expected parts structure, attempting to use full text response as JSON string.");
+                jsonString = textResponse; 
+            } else {
+                console.error("Gemini response, candidate, or parts structure is unexpected or empty:", result?.response);
                 throw new Error("No content found in Gemini response or response structure is unexpected.");
             }
         }
 
-        if (!messageContent) {
-             return res.status(500).json({ success: false, error: "Received empty or invalid structured response from Gemini API." });
+        if (!jsonString) { // Should be caught by throws above, but as a safeguard
+             return res.status(500).json({ success: false, error: "Failed to extract any processable content string from Gemini API response." });
         }
-        console.log("Gemini API Response Content (parsed or direct object):", messageContent);
-
+        
         let parsedData;
-        if (typeof messageContent === 'object') {
-            parsedData = messageContent;
-        } else if (typeof messageContent === 'string') {
-            console.warn("Response content was a string, attempting to parse manually.");
-            parsedData = JSON.parse(messageContent);
-        } else {
-             return res.status(500).json({ success: false, error: "Unexpected response type from Gemini API.", raw_response_type: typeof messageContent });
+        try {
+            parsedData = JSON.parse(jsonString);
+        } catch (parseError) {
+            console.error("Failed to parse JSON string extracted from Gemini:", parseError);
+            console.error("Problematic JSON string snippet:", jsonString.substring(0, 500));
+            return res.status(500).json({ success: false, error: "Failed to parse the JSON content from Gemini API.", details: parseError.message, raw_response_string: jsonString });
         }
+        
+        console.log("Gemini API Response Content (successfully parsed from jsonString):", parsedData);
 
         if (!parsedData || !Array.isArray(parsedData.paragraphs)) {
             console.error("Parsed JSON missing 'paragraphs' array or invalid structure:", parsedData);
-            return res.status(500).json({ success: false, error: "Invalid data structure from Gemini API (missing 'paragraphs' array).", raw_response: messageContent });
+            return res.status(500).json({ 
+                success: false, 
+                error: "Invalid data structure from Gemini API (missing 'paragraphs' array).", 
+                raw_parsed_response: parsedData // Send back what was parsed if it's not the expected structure
+            });
         }
 
         console.log(`Successfully processed with Gemini. Found ${parsedData.paragraphs.length} paragraphs.`);
         res.json({ success: true, data: parsedData });
 
     } catch (error) {
-        console.error("Error calling Gemini API or processing its response:", error);
-        let errorMessage = "An error occurred while communicating with the Gemini API.";
+        console.error("Error during Gemini API call or response processing:", error);
+        let errorMessage = "An error occurred while communicating with the Gemini API or processing its response.";
         let errorDetails = error.message;
-        // No longer need to check for "API key not valid" from client, as it's server-configured
+        
+        if (error.message && (error.message.toLowerCase().includes("api key not valid") || error.message.toLowerCase().includes("invalid api key"))) {
+             errorMessage = "Invalid API key provided to Gemini. Please check the API key.";
+             return res.status(401).json({ success: false, error: errorMessage, details: errorDetails});
+        }
+
         res.status(500).json({
             success: false,
             error: errorMessage,
-            details: errorDetails,
-            raw_error: error 
+            details: errorDetails
         });
     }
 });
 
 app.get('/gemini', (req, res) => res.send('Image Paragraph Extractor Backend (Gemini Version) is running!'));
 app.listen(port, () => {
-    if (!GEMINI_API_KEY) {
-        console.warn(`**********************************************************************************`);
-        console.warn(`* WARNING: GEMINI_API_KEY is not set. The API calls will fail.                 *`);
-        console.warn(`* Please create a .env file in the backend directory with your GEMINI_API_KEY. *`);
-        console.warn(`**********************************************************************************`);
-    }
     console.log(`Gemini Backend server listening at http://localhost:${port}`);
 });
