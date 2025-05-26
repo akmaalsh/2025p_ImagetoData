@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Images to Text Converter</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Image(s) to Text Converter</h1>
+            <div class="description">
+                <p>Extract text and paragraphs from images using Google's Gemini AI model.</p>
+            </div>
+            <button onclick="clearApiKey()" class="reset-key-button">Reset API Key</button>
+        </header>
+
+        <div id="apiKeyModal" class="modal">
+            <div class="modal-content">
+                <h2>Gemini API Key Required</h2>
+                <p>Please enter your Gemini API key to use this service. You can get one from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>.</p>
+                <div class="api-key-input-container">
+                    <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key">
+                    <button onclick="toggleApiKeyVisibility()" id="toggleApiKey">Show</button>
+                </div>
+                <button onclick="saveApiKey()" class="primary-button">Save Key</button>
+                <div class="api-key-info">
+                    <p>Your API key is stored securely in your browser and never sent to our servers.</p>
+                    <p>Make sure you have appropriate usage limits set on your API key.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Upload Images</h2>
+            <div class="section-content">
+                <div class="upload-area" id="dropZone">
+                    <input type="file" id="imageInput" accept="image/*" multiple>
+                    <div class="upload-text">
+                        <p>Drag and drop image files here</p>
+                        <p>or</p>
+                        <p>Click to select files</p>
+                        <p class="upload-hint">Supported formats: JPG, PNG</p>
+                    </div>
+                </div>
+                <div id="fileList" class="file-list"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Process Images</h2>
+            <div class="section-content">
+                <button id="submitButton" class="process-button">Extract Paragraphs</button>
+                <div id="progress" class="progress">
+                    <div class="progress-text"></div>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Results</h2>
+            <div class="section-header">
+                <button id="toggleAllResults" class="toggle-all-button">Collapse All</button>
+            </div>
+            <div class="section-content">
+                <div id="error" class="status error"></div>
+                <div id="aggregationInfo" class="aggregation-info"></div>
+                <div id="resultsOutput" class="results-list"></div>
+                <div id="downloadSection" class="download-section" style="display: none;">
+                    <h3>Download Results</h3>
+                    <div class="download-options">
+                        <div class="download-group">
+                            <label>Excel Format:</label>
+                            <button id="downloadSeparateSheets" class="download-button">Download in Separate Sheets</button>
+                            <button id="downloadSingleSheet" class="download-button">Download in Single Sheet</button>
+                        </div>
+                        <div class="download-group">
+                            <label>Other Formats:</label>
+                            <button id="downloadTxtButton" class="download-button">Download as TXT</button>
+                            <button id="downloadCsvButton" class="download-button">Download as CSV</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 Image to Text Converter. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://github.com/akmaalsh" target="_blank" rel="noopener noreferrer">Akmal's GitHub</a>
+            <span class="separator">•</span>
+            <a href="https://www.linkedin.com/in/akmalshalahuddin/" target="_blank" rel="noopener noreferrer">Akmal's LinkedIn</a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

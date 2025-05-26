@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image(s) to Data Converter</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Image(s) to Data Converter</h1>
+            <p class="author">by Akmal Shldn</p>
+            <div class="description">
+                <p>Transform your image tables into structured data using Google's Gemini AI model.</p>
+            </div>
+            <button onclick="clearApiKey()" class="reset-key-button">Reset API Key</button>
+        </header>
+
+        <div id="apiKeyModal" class="modal">
+            <div class="modal-content">
+                <h2>Gemini API Key Required</h2>
+                <p>Please enter your Gemini API key to use this service. You can get one from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>.</p>
+                <div class="api-key-input-container">
+                    <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key">
+                    <button onclick="toggleApiKeyVisibility()" id="toggleApiKey">Show</button>
+                </div>
+                <button onclick="saveApiKey()" class="primary-button">Save Key</button>
+                <div class="api-key-info">
+                    <p>Your API key is stored securely in your browser and never sent to our servers.</p>
+                    <p>Make sure you have appropriate usage limits set on your API key.</p>
+                </div>
+            </div>
+        </div>
+
+        <main>
+            <form id="uploadForm" class="upload-form">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="step-number">1</div>
+                        <h2>Upload Images</h2>
+                    </div>
+                    <div class="section-content">
+                        <div class="upload-area" id="dropZone">
+                            <input type="file" id="imageFile" name="imageFile" accept="image/*" multiple>
+                            <div class="upload-text">
+                                <p>Drag and drop image files here</p>
+                                <p>or</p>
+                                <p>Click to select files</p>
+                                <p class="upload-hint">Supported formats: JPG, PNG, GIF</p>
+                            </div>
+                        </div>
+                        <div id="fileList" class="file-list"></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <div class="step-number">2</div>
+                        <h2>Define Table Context</h2>
+                    </div>
+                    <div class="section-content">
+             <label for="imageDescription">Image Context/Description:</label>
+             <input type="text" id="imageDescription" name="imageDescription" placeholder="e.g., Concordance KBKI 2015 to KBLI 2020">
+
+                        <div class="columns-section">
+                            <label>Number of Columns:</label>
+                            <input type="number" id="columnCount" name="columnCount" min="1" required>
+                            
+                            <div id="columnDetails" class="column-details">
+                                <!-- Column details will be added here dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <div class="step-number">3</div>
+                        <h2>Extract Tables</h2>
+                    </div>
+                    <div class="section-content">
+                        <div id="error" class="status error" style="display: none;"></div>
+                        <button type="submit" id="extractButton">Extract Tables</button>
+                        <div id="progressContainer" class="progress-container" style="display: none;">
+                            <div class="progress-bar">
+                                <div id="progressBar" class="progress"></div>
+                            </div>
+                            <p id="progressText">Processing: 0/0 files (0%)</p>
+                        </div>
+                 </div>
+        </div>
+
+                <div id="resultsSection" class="section" style="display: none;">
+                    <div class="section-header">
+                        <div class="step-number">4</div>
+                        <h2>Results</h2>
+                        <button id="toggleAllResults" class="toggle-all-button">Collapse All</button>
+                    </div>
+                    <div class="section-content">
+                        <div id="resultsList" class="results-list"></div>
+                        <div class="download-options">
+                            <div class="download-group">
+                                <div class="download-group-label">Excel Format</div>
+                                <button id="downloadExcelSeparate" class="download-button">Download as Separate Sheets</button>
+                                <button id="downloadExcelCombined" class="download-button">Download as Single Sheet</button>
+                            </div>
+                            <div class="download-group">
+                                <div class="download-group-label">CSV Format</div>
+                                <button id="downloadCSV" class="download-button">Download as Separate Files</button>
+                                <button id="downloadCSVCombined" class="download-button">Download as Single File</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </main>
+
+        <footer>
+            <p>© 2025 Image to Data Converter. All rights reserved.</p>
+            <div class="social-links">
+                <a href="https://github.com/akmaalsh" target="_blank" rel="noopener noreferrer">Akmal's GitHub</a>
+                <span class="separator">•</span>
+                <a href="https://www.linkedin.com/in/akmalshalahuddin/" target="_blank" rel="noopener noreferrer">Akmal's LinkedIn</a>
+            </div>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
